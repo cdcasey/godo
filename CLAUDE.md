@@ -11,12 +11,15 @@ A todo API built with Go and Chi router. Authentication and authorization are cr
 - **Testing**: 100% test coverage required
 - **Logging**: Structured logging with slog (Go standard library)
 - **Deployment**: Docker with docker-compose
+- Config: Use joho/godotenv to load .env files locally, but rely on native system env vars in Docker.
 
 ## Architecture
 - RESTful API design
 - Middleware for auth, logging, CORS, and error handling
 - Repository pattern for database access
 - Clear separation between handlers, services, and data layers
+- Interfaces: Define interfaces for all Service and Repository layers to enable easy mocking.
+- Dependency Injection: Inject dependencies (logger, config, store) via struct constructors. Global state is forbidden.
 
 ## Authorization Rules
 - **Users**: Can create todos, mark their own todos as complete, view their own todos
@@ -87,17 +90,12 @@ What to log:
 - Test authorization rules thoroughly
 
 ## Important: Code Delivery Style
-**CRITICAL**: Do not generate complete files or large blocks of code at once.
+**CRITICAL**: Do not generate massive files in one go. Avoid "wall of text" code.
 
-Instead:
-1. Provide small, incremental snippets (5-20 lines max)
-2. Explain what each snippet does before showing the code
-3. Wait for confirmation before moving to the next piece
-4. Break down file creation into logical steps:
-   - Imports first
-   - Type definitions next
-   - Then individual functions one at a time
-5. Ask "What would you like to add next?" or "Should I continue?" between steps
+1. **Logical Chunks**: Provide code in logical units (e.g., "Here is the struct definition," then "Here is the constructor," then "Here is the ServeHTTP method").
+2. **Boilerplate Exception**: For standard boilerplate (imports, simple DTOs, interfaces), you may provide the full block.
+3. **Complex Logic**: For business logic (Auth middleware, Repository queries), break it down and explain the "Why" before the code.
+4. **Iterative Approval**: Wait for confirmation after completing a logical component (e.g., "The User Handler is done. Shall we move to the User Route definition?")
 
 Example flow:
 - Me: "Let's create the user model"
@@ -129,11 +127,13 @@ DELETE /api/todos/:id         - Delete todo (admin only)
 
 ### Dockerfile
 - Multi-stage build: builder stage and minimal runtime stage
-- Use `golang:1.21-alpine` for builder
+- Use `golang:1.25.4-alpine` for builder
 - Use `alpine:latest` for runtime
 - Copy only necessary files to final image
 - Run as non-root user
 - Expose port 8080
+- **Important**: If switching to `mattn/go-sqlite3`, ensure builder stage has `apk add --no-cache gcc musl-dev` and set `CGO_ENABLED=1`.
+- If using `modernc.org/sqlite`, set `CGO_ENABLED=0`.
 
 ### docker-compose.yml
 - API service with environment variables
