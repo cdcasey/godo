@@ -65,7 +65,7 @@ func TestGetUserByEmail_Success(t *testing.T) {
 func TestGetUserByEmail_NotFound(t *testing.T) {
 	store := setupTestStore(t)
 
-	user, err := store.GetUserByEmail("nonexistent@exaple.com")
+	user, err := store.GetUserByEmail("nonexistent@example.com")
 
 	if err != ErrUserNotFound {
 		t.Errorf("Expected ErrUserNotFound, got %v", err)
@@ -94,7 +94,7 @@ func TestGetUserByID_Success(t *testing.T) {
 	}
 
 	// Retrieve the user by ID
-	retrieved, err := store.GetUserById(user.ID)
+	retrieved, err := store.GetUserByID(user.ID)
 	if err != nil {
 		t.Fatalf("Failed to get user by ID: %v", err)
 	}
@@ -119,7 +119,7 @@ func TestGetUserByID_Success(t *testing.T) {
 func TestGetUserByID_NotFound(t *testing.T) {
 	store := setupTestStore(t)
 
-	user, err := store.GetUserById(uuid.NewString())
+	user, err := store.GetUserByID(uuid.NewString())
 
 	if err != ErrUserNotFound {
 		t.Errorf("Expected ErrUserNotFound, got %v", err)

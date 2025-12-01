@@ -26,7 +26,7 @@ func TestNew_Success(t *testing.T) {
 	store := setupTestStore(t)
 
 	if err := store.db.Ping(); err != nil {
-		t.Errorf("Failed to ping database: %v", err)
+		t.Errorf("failed to ping database: %v", err)
 	}
 }
 
