@@ -3,6 +3,7 @@ package store
 import (
 	"database/sql"
 	"fmt"
+	"godo/internal/models"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
@@ -52,4 +53,17 @@ func (s *Store) RunMigrations(migratopnPath string) error {
 
 func (s *Store) Close() error {
 	return s.db.Close()
+}
+
+func (s *Store) CreateUser(user *models.User) error {
+	query := `INSERT INTO users (id, email, password_hash, role, created_at)
+						VALUES (?,?,?,?,?)
+	`
+
+	_, err := s.db.Exec(query, user.ID, user.Email)
+	if err != nil {
+		return fmt.Errorf("Failed to create user: %w", err)
+	}
+
+	return nil
 }
