@@ -102,7 +102,7 @@ Example flow:
 - Me: "Let's create the user model"
 - You: "Here are the imports and User struct..."
 - Me: "Looks good, what's next?"
-- You: "Here's the password hashing function..."
+- You: "Here's the password hashing function and which file it should go into..."
 
 ## API Endpoints (to implement)
 ```
