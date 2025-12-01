@@ -83,6 +83,7 @@ What to log:
 
 ## Testing Requirements
 - 100% test coverage (use `go test -cover`)
+    - We can sacrifice some test coverage in favor of pragmatism. e.g., we don't need to test errors returned by sql.Open()
 - Table-driven tests for handlers
 - Mock database for unit tests
 - Integration tests for critical paths (auth flow, CRUD operations)
