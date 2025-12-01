@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"godo/internal/models"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
@@ -58,40 +57,4 @@ func (s *Store) RunMigrations(migratopnPath string) error {
 
 func (s *Store) Close() error {
 	return s.db.Close()
-}
-
-func (s *Store) CreateUser(user *models.User) error {
-	query := `INSERT INTO users (id, email, password_hash, role, created_at)
-						VALUES (?,?,?,?,?)
-	`
-
-	_, err := s.db.Exec(query, user.ID, user.Email, user.PasswordHash, user.Role, user.CreatedAt)
-	if err != nil {
-		return fmt.Errorf("Failed to create user: %w", err)
-	}
-
-	return nil
-}
-
-func (s *Store) GetUserByEmail(email string) (*models.User, error) {
-	query := `SELECT id,email,password_hash,role,created_at FROM users WHERE email = ?`
-
-	var user models.User
-	err := s.db.QueryRow(query, email).Scan(
-		&user.ID,
-		&user.Email,
-		&user.PasswordHash,
-		&user.Role,
-		&user.CreatedAt,
-	)
-
-	if err == sql.ErrNoRows {
-		return nil, ErrUserNotFound
-	}
-
-	if err != nil {
-		return nil, fmt.Errorf("Failed to get user by email: %w", err)
-	}
-
-	return &user, nil
 }

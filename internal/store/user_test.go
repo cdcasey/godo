@@ -75,3 +75,57 @@ func TestGetUserByEmail_NotFound(t *testing.T) {
 		t.Errorf("Expected nil user, got %v", user)
 	}
 }
+
+func TestGetUserByID_Success(t *testing.T) {
+	store := setupTestStore(t)
+
+	// Create a user first
+	user := &models.User{
+		ID:           uuid.NewString(),
+		Email:        "test@example.com",
+		PasswordHash: "hashed_password",
+		Role:         models.RoleUser,
+		CreatedAt:    time.Now(),
+	}
+
+	err := store.CreateUser(user)
+	if err != nil {
+		t.Fatalf("Failed to create user: %v", err)
+	}
+
+	// Retrieve the user by ID
+	retrieved, err := store.GetUserById(user.ID)
+	if err != nil {
+		t.Fatalf("Failed to get user by ID: %v", err)
+	}
+
+	if retrieved == nil {
+		t.Fatal("Expected user, got nil")
+	}
+
+	if retrieved.ID != user.ID {
+		t.Errorf("Expected ID %s, got %s", user.ID, retrieved.ID)
+	}
+
+	if retrieved.Email != user.Email {
+		t.Errorf("Expected email %s, got %s", user.Email, retrieved.Email)
+	}
+
+	if retrieved.Role != user.Role {
+		t.Errorf("Expected role %s, got %s", user.Role, retrieved.Role)
+	}
+}
+
+func TestGetUserByID_NotFound(t *testing.T) {
+	store := setupTestStore(t)
+
+	user, err := store.GetUserById(uuid.NewString())
+
+	if err != ErrUserNotFound {
+		t.Errorf("Expected ErrUserNotFound, got %v", err)
+	}
+
+	if user != nil {
+		t.Errorf("Expected nil user, got %v", user)
+	}
+}
