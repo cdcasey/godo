@@ -1,33 +1,29 @@
 package store
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 )
 
-func setupTestDB(t *testing.T) (string, func()) {
+func setupTestStore(t *testing.T) *Store {
 	t.Helper()
+	dbPath := filepath.Join(t.TempDir(), "test.db")
 
-	tmpDir := t.TempDir()
-	dbPath := filepath.Join(tmpDir, "test.db")
-
-	cleanup := func() {
-		os.Remove(dbPath)
+	store, err := New(dbPath)
+	if err != nil {
+		t.Fatalf("Failed to create test store: %v", err)
 	}
 
-	return dbPath, cleanup
+	if err := store.RunMigrations("../../migrations"); err != nil {
+		t.Fatalf("failed to run migrations: %v", err)
+	}
+
+	t.Cleanup(func() { store.Close() })
+	return store
 }
 
 func TestNew_Success(t *testing.T) {
-	dbpath, cleanup := setupTestDB(t)
-	defer cleanup()
-
-	store, err := New(dbpath)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	defer store.Close()
+	store := setupTestStore(t)
 
 	if err := store.db.Ping(); err != nil {
 		t.Errorf("Failed to ping database: %v", err)
@@ -35,14 +31,7 @@ func TestNew_Success(t *testing.T) {
 }
 
 func TestRunMigrations_Success(t *testing.T) {
-	dbPath, cleanup := setupTestDB(t)
-	defer cleanup()
-
-	store, err := New(dbPath)
-	if err != nil {
-		t.Fatalf("failed to create store: %v", err)
-	}
-	defer store.Close()
+	store := setupTestStore(t)
 
 	// Run migrations
 	migrationsPath := "../../migrations"
@@ -52,20 +41,14 @@ func TestRunMigrations_Success(t *testing.T) {
 
 	// Verify tables exist
 	var tableName string
-	err = store.db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").Scan(&tableName)
+	err := store.db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").Scan(&tableName)
 	if err != nil {
 		t.Errorf("Users table not found: %v", err)
 	}
 }
 
 func TestClose(t *testing.T) {
-	dbPath, cleanup := setupTestDB(t)
-	defer cleanup()
-
-	store, err := New(dbPath)
-	if err != nil {
-		t.Fatalf("failed to create store: %v", err)
-	}
+	store := setupTestStore(t)
 
 	if err := store.Close(); err != nil {
 		t.Errorf("expected no error on close, got %v", err)
@@ -78,31 +61,17 @@ func TestClose(t *testing.T) {
 }
 
 func TestRunMigrations_InvalidPath(t *testing.T) {
-	dbPath, cleanup := setupTestDB(t)
-	defer cleanup()
-
-	store, err := New(dbPath)
-	if err != nil {
-		t.Fatalf("failed to create store: %v", err)
-	}
-	defer store.Close()
+	store := setupTestStore(t)
 
 	// Try invalid migrations path
-	err = store.RunMigrations("/nonexistent/path")
+	err := store.RunMigrations("/nonexistent/path")
 	if err == nil {
 		t.Fatal("expected error for invalid migrations path, got nil")
 	}
 }
 
 func TestRunMigrations_Idempodent(t *testing.T) {
-	dbPath, cleanup := setupTestDB(t)
-	defer cleanup()
-
-	store, err := New(dbPath)
-	if err != nil {
-		t.Fatalf("Failed to create store: %v", err)
-	}
-	defer store.Close()
+	store := setupTestStore(t)
 
 	migrationsPath := "../../migrations"
 
