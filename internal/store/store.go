@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"godo/internal/models"
 
@@ -9,6 +10,10 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
 	"github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/mattn/go-sqlite3"
+)
+
+var (
+	ErrUserNotFound = errors.New("user not found")
 )
 
 type Store struct {
@@ -60,10 +65,33 @@ func (s *Store) CreateUser(user *models.User) error {
 						VALUES (?,?,?,?,?)
 	`
 
-	_, err := s.db.Exec(query, user.ID, user.Email)
+	_, err := s.db.Exec(query, user.ID, user.Email, user.PasswordHash, user.Role, user.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("Failed to create user: %w", err)
 	}
 
 	return nil
+}
+
+func (s *Store) GetUserByEmail(email string) (*models.User, error) {
+	query := `SELECT id,email,password_hash,role,created_at FROM users WHERE email = ?`
+
+	var user models.User
+	err := s.db.QueryRow(query, email).Scan(
+		&user.ID,
+		&user.Email,
+		&user.PasswordHash,
+		&user.Role,
+		&user.CreatedAt,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, ErrUserNotFound
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get user by email: %w", err)
+	}
+
+	return &user, nil
 }
