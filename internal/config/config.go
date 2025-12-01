@@ -31,7 +31,7 @@ func Load() (*Config, error) {
 
 	// Validate required fields
 	if cfg.DatabaseURL == "" {
-		return nil, fmt.Errorf("Database_URL is required")
+		return nil, fmt.Errorf("DATABASE_URL is required")
 	}
 	if cfg.JWTSecret == "" {
 		return nil, fmt.Errorf("JWT_SECRET is required")
