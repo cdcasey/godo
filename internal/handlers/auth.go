@@ -70,7 +70,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Role:         models.RoleUser,
 	}
 
-	h.logger.Info("User registered", "user_id", user.ID, "email", user.Email)
+	h.logger.Info("User registered", "user_id", user.ID)
 
 	token, err := auth.GenerateToken(user.ID, user.Email, user.Role, h.jwtSecret, 24*time.Hour)
 	if err != nil {
