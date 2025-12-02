@@ -2,6 +2,7 @@ package main
 
 import (
 	"godo/internal/config"
+	"godo/internal/store"
 	"log"
 	"log/slog"
 	"os"
@@ -15,6 +16,20 @@ func main() {
 
 	logger := setupLogger(cfg.LogLevel, cfg.LogFormat)
 	logger.Info("Starting todo API server")
+
+	db, err := store.New(cfg.DatabaseURL)
+	if err != nil {
+		logger.Error("Failed to initialize database", "error", err)
+		os.Exit(1)
+	}
+	defer db.Close()
+
+	if err := db.RunMigrations("./migrations"); err != nil {
+		logger.Error("Failed to run migrations", "error", err)
+		os.Exit(1)
+	}
+	logger.Info("Database migrations completed")
+
 }
 
 func setupLogger(level, format string) *slog.Logger {
