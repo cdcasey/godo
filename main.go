@@ -7,11 +7,9 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
 )
 
 func main() {
@@ -42,8 +40,17 @@ func main() {
 	r.Use(middleware.RealIP)
 	r.Use(loggerMiddleware(logger))
 	r.Use(middleware.Recoverer)
-	r.Use(corsMiddleWare(cfg.AllowedOrigins))
+	r.Use(corsMiddleware(cfg.AllowedOrigins))
 
+	r.Get("/api/health", healthHandler())
+
+	addr := ":" + cfg.Port
+	logger.Info("Server starting", "port", cfg.Port)
+
+	if err := http.ListenAndServe(addr, r); err != nil {
+		logger.Error("Server failed", "error", err)
+		os.Exit(1)
+	}
 }
 
 func setupLogger(level, format string) *slog.Logger {
