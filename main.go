@@ -5,7 +5,12 @@ import (
 	"godo/internal/store"
 	"log"
 	"log/slog"
+	"net/http"
 	"os"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 func main() {
@@ -29,6 +34,14 @@ func main() {
 		os.Exit(1)
 	}
 	logger.Info("Database migrations completed")
+
+	r := chi.NewRouter()
+
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(loggerMiddleware(logger))
+	r.Use(middleware.Recoverer)
+	r.Use(corsMiddleWare(cfg.AllowedOrigins))
 
 }
 
@@ -57,4 +70,27 @@ func setupLogger(level, format string) *slog.Logger {
 	}
 
 	return slog.New(handler)
+}
+
+func loggerMiddleware(logger *slog.Logger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			start := time.Now()
+
+			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+
+			defer func() {
+				logger.Info("request completed",
+					"method", r.Method,
+					"path", r.URL.Path,
+					"status", ww.Status(),
+					"bytes", ww.BytesWritten(),
+					"duration", time.Since(start),
+					"request_id", middleware.GetReqID(r.Context()),
+				)
+			}()
+
+			next.ServeHTTP(ww, r)
+		})
+	}
 }
