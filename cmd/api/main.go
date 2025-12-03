@@ -2,6 +2,7 @@ package main
 
 import (
 	"godo/internal/config"
+	"godo/internal/handlers"
 	"godo/internal/store"
 	"log"
 	"log/slog"
@@ -34,6 +35,8 @@ func main() {
 	}
 	logger.Info("Database migrations completed")
 
+	authHandler := handlers.NewAuthHandler(db, logger, cfg.JWTSecret)
+
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -43,6 +46,8 @@ func main() {
 	r.Use(corsMiddleware(cfg.AllowedOrigins))
 
 	r.Get("/api/health", healthHandler())
+	r.Post("/api/register", authHandler.Register)
+	r.Post("/api/login", authHandler.Login)
 
 	addr := ":" + cfg.Port
 	logger.Info("Server starting", "port", cfg.Port)
