@@ -65,9 +65,17 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user := &models.User{
+		ID:           models.NewID(),
 		Email:        req.Email,
 		PasswordHash: hashedPassword,
 		Role:         models.RoleUser,
+		CreatedAt:    time.Now(),
+	}
+
+	if err := h.store.CreateUser(user); err != nil {
+		h.logger.Error("Failed to create user", "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
 	}
 
 	h.logger.Info("User registered", "user_id", user.ID)
