@@ -100,3 +100,23 @@ func (s *Store) UpdateTodo(todo *models.ToDo) error {
 
 	return nil
 }
+
+func (s *Store) DeleteTodo(id string) error {
+	query := `DELETE FROM todos WHERE id = ?`
+
+	result, err := s.db.Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete todo: %w", err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rows == 0 {
+		return ErrToDoNotFound
+	}
+
+	return nil
+}
