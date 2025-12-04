@@ -12,12 +12,12 @@ import (
 )
 
 type AuthHandler struct {
-	store     *store.Store
+	store     store.UserStore
 	logger    *slog.Logger
 	jwtSecret string
 }
 
-func NewAuthHandler(store *store.Store, logger *slog.Logger, jwtSecret string) *AuthHandler {
+func NewAuthHandler(store store.UserStore, logger *slog.Logger, jwtSecret string) *AuthHandler {
 	return &AuthHandler{
 		store:     store,
 		logger:    logger,
