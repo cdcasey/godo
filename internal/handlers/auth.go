@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"godo/internal/auth"
 	"godo/internal/models"
 	"godo/internal/store"
@@ -112,7 +113,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.store.GetUserByEmail(req.Email)
 	if err != nil {
-		if err == store.ErrUserNotFound {
+		if errors.Is(err, store.ErrUserNotFound) {
 			h.logger.Warn("Login attempt with non-existent email", "email", req.Email)
 			http.Error(w, "Invalid username or password", http.StatusUnauthorized)
 			return
