@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func setupTestHandler(t *testing.T) (*AuthHandler, *store.Store) {
@@ -138,5 +139,141 @@ func TestRegister_Failure(t *testing.T) {
 			}
 		})
 	}
+}
 
+func TestLogin_Success(t *testing.T) {
+	handler, testStore := setupTestHandler(t)
+
+	// Create a user first
+	password := "password123"
+	hashedPassword, _ := models.HashPassword(password)
+	user := &models.User{
+		ID:           models.NewID(),
+		Email:        "test@example.com",
+		PasswordHash: hashedPassword,
+		Role:         models.RoleUser,
+		CreatedAt:    time.Now(),
+	}
+
+	if err := testStore.CreateUser(user); err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+
+	reqBody := LoginRequest{
+		Email:    "test@example.com",
+		Password: password,
+	}
+	body, _ := json.Marshal(reqBody)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/login", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	handler.Login(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected status %d, got %d", http.StatusOK, rec.Code)
+	}
+
+	var resp AuthResponse
+	if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+		t.Fatalf("Failed to decode response: %v", err)
+	}
+
+	if resp.Token == "" {
+		t.Error("Expected token, got empty string")
+	}
+
+	if resp.User.Email != user.Email {
+		t.Errorf("Expected email %s, got %s", user.Email, resp.User.Email)
+	}
+}
+
+func TestLogin_Failures(t *testing.T) {
+	tests := []struct {
+		name           string
+		setupUser      bool
+		email          string
+		password       string
+		loginEmail     string
+		loginPassword  string
+		expectedStatus int
+		expectedError  string
+	}{
+		{
+			name:           "user not found",
+			setupUser:      false,
+			loginEmail:     "nonexistent@example.com",
+			loginPassword:  "password123",
+			expectedStatus: http.StatusUnauthorized,
+			expectedError:  "Invalid username or password",
+		},
+		{
+			name:           "wrong password",
+			setupUser:      true,
+			email:          "test@example.com",
+			password:       "correctpassword",
+			loginEmail:     "test@example.com",
+			loginPassword:  "wrongpassword",
+			expectedStatus: http.StatusUnauthorized,
+			expectedError:  "Invalid username or password",
+		},
+		{
+			name:           "missing email",
+			setupUser:      false,
+			loginEmail:     "",
+			loginPassword:  "password123",
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  "Email and password are required",
+		},
+		{
+			name:           "missing password",
+			setupUser:      false,
+			loginEmail:     "test@example.com",
+			loginPassword:  "",
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  "Email and password are required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler, testStore := setupTestHandler(t)
+
+			// Setup user if needed
+			if tt.setupUser {
+				hashedPassword, _ := models.HashPassword(tt.password)
+				user := &models.User{
+					ID:           models.NewID(),
+					Email:        tt.email,
+					PasswordHash: hashedPassword,
+					Role:         models.RoleUser,
+					CreatedAt:    time.Now(),
+				}
+				if err := testStore.CreateUser(user); err != nil {
+					t.Fatalf("Failed to create test user: %v", err)
+				}
+			}
+
+			reqBody := LoginRequest{
+				Email:    tt.loginEmail,
+				Password: tt.loginPassword,
+			}
+			body, _ := json.Marshal(reqBody)
+
+			req := httptest.NewRequest(http.MethodPost, "/api/login", bytes.NewBuffer(body))
+			req.Header.Set("Content-Type", "application/json")
+			rec := httptest.NewRecorder()
+
+			handler.Login(rec, req)
+
+			if rec.Code != tt.expectedStatus {
+				t.Errorf("Expected status %d, got %d", tt.expectedStatus, rec.Code)
+			}
+
+			if !bytes.Contains(rec.Body.Bytes(), []byte(tt.expectedError)) {
+				t.Errorf("Expected error containing %q, got %q", tt.expectedError, rec.Body.String())
+			}
+		})
+	}
 }
