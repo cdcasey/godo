@@ -74,7 +74,7 @@ func (s *Store) GetTodosByUserID(userID string) ([]*models.Todo, error) {
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating todos", err)
+		return nil, fmt.Errorf("error iterating todos: %w", err)
 	}
 
 	return todos, nil
