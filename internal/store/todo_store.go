@@ -45,7 +45,7 @@ func (s *Store) GetTodoByID(id string) (*models.Todo, error) {
 }
 
 func (s *Store) GetTodosByUserID(userID string) ([]*models.Todo, error) {
-	query := `SELECT id, user_id, title, desription, completed, created_at, updated_at
+	query := `SELECT id, user_id, title, description, completed, created_at, updated_at
 						FROM todos WHERE user_id = ? ORDER BY created_at DESC`
 
 	rows, err := s.db.Query(query, userID)
