@@ -2,7 +2,7 @@ package models
 
 import "time"
 
-type ToDo struct {
+type Todo struct {
 	ID          string    `json:"id"`
 	UserID      string    `json:"user_id"`
 	Title       string    `json:"title"`
@@ -12,9 +12,9 @@ type ToDo struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
-func NewTodo(userID, title, description string) *ToDo {
+func NewTodo(userID, title, description string) *Todo {
 	now := time.Now()
-	return &ToDo{
+	return &Todo{
 		ID:          NewID(),
 		UserID:      userID,
 		Title:       title,
@@ -24,4 +24,3 @@ func NewTodo(userID, title, description string) *ToDo {
 		UpdatedAt:   now,
 	}
 }
-

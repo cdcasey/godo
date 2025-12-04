@@ -13,7 +13,7 @@ import (
 
 var (
 	ErrUserNotFound = errors.New("user not found")
-	ErrToDoNotFound = errors.New("todo not found")
+	ErrTodoNotFound = errors.New("todo not found")
 )
 
 type Store struct {

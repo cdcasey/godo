@@ -6,7 +6,7 @@ import (
 	"godo/internal/models"
 )
 
-func (s *Store) CreateTodo(todo *models.ToDo) error {
+func (s *Store) CreateTodo(todo *models.Todo) error {
 	query := `INSERT INTO todos (id, user_id, title, description, completed, created_at, updated_at)
 						VALUES (?, ?, ?, ?, ?, ?, ?)`
 
@@ -18,11 +18,11 @@ func (s *Store) CreateTodo(todo *models.ToDo) error {
 	return nil
 }
 
-func (s *Store) GetToDoByID(id string) (*models.ToDo, error) {
+func (s *Store) GetTodoByID(id string) (*models.Todo, error) {
 	query := `SELECT id, user_id, title, description, completed, created_at, updated_at
             FROM todos WHERE id = ?`
 
-	var todo models.ToDo
+	var todo models.Todo
 	err := s.db.QueryRow(query, id).Scan(
 		&todo.ID,
 		&todo.UserID,
@@ -34,7 +34,7 @@ func (s *Store) GetToDoByID(id string) (*models.ToDo, error) {
 	)
 
 	if err == sql.ErrNoRows {
-		return nil, ErrToDoNotFound
+		return nil, ErrTodoNotFound
 	}
 
 	if err != nil {
@@ -44,7 +44,7 @@ func (s *Store) GetToDoByID(id string) (*models.ToDo, error) {
 	return &todo, nil
 }
 
-func (s *Store) GetTodosByUserID(userID string) ([]*models.ToDo, error) {
+func (s *Store) GetTodosByUserID(userID string) ([]*models.Todo, error) {
 	query := `SELECT id, user_id, title, desription, completed, created_at, updated_at
 						FROM todos WHERE user_id = ? ORDER BY created_at DESC`
 
@@ -55,9 +55,9 @@ func (s *Store) GetTodosByUserID(userID string) ([]*models.ToDo, error) {
 	}
 	defer rows.Close()
 
-	var todos []*models.ToDo
+	var todos []*models.Todo
 	for rows.Next() {
-		var todo models.ToDo
+		var todo models.Todo
 		err := rows.Scan(
 			&todo.ID,
 			&todo.UserID,
@@ -80,7 +80,7 @@ func (s *Store) GetTodosByUserID(userID string) ([]*models.ToDo, error) {
 	return todos, nil
 }
 
-func (s *Store) UpdateTodo(todo *models.ToDo) error {
+func (s *Store) UpdateTodo(todo *models.Todo) error {
 	query := `UPDATE todos SET title = ?, description = ?, completed = ?, updated_at = ?
 					WHERE id = ?`
 
@@ -95,7 +95,7 @@ func (s *Store) UpdateTodo(todo *models.ToDo) error {
 	}
 
 	if rows == 0 {
-		return ErrToDoNotFound
+		return ErrTodoNotFound
 	}
 
 	return nil
@@ -115,7 +115,7 @@ func (s *Store) DeleteTodo(id string) error {
 	}
 
 	if rows == 0 {
-		return ErrToDoNotFound
+		return ErrTodoNotFound
 	}
 
 	return nil

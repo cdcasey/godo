@@ -8,10 +8,10 @@ type UserStore interface {
 	GetUserByID(id string) (*models.User, error)
 }
 
-type ToDoStore interface {
-	CreateTodo(todo *models.ToDo) error
-	GetToDoByID(id string) (*models.ToDo, error)
-	GetToDosByUserID(userID string) ([]*models.ToDo, error)
-	UpdateToDo(todo *models.ToDo) error
+type TodoStore interface {
+	CreateTodo(todo *models.Todo) error
+	GetTodoByID(id string) (*models.Todo, error)
+	GetTodosByUserID(userID string) ([]*models.Todo, error)
+	UpdateTodo(todo *models.Todo) error
 	DeleteToDO(id string) error
 }
