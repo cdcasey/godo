@@ -79,3 +79,24 @@ func (s *Store) GetTodosByUserID(userID string) ([]*models.ToDo, error) {
 
 	return todos, nil
 }
+
+func (s *Store) UpdateTodo(todo *models.ToDo) error {
+	query := `UPDATE todos SET title = ?, description = ?, completed = ?, updated_at = ?
+					WHERE id = ?`
+
+	result, err := s.db.Exec(query, todo.Title, todo.Description, todo.Completed, todo.UpdatedAt, todo.ID)
+	if err != nil {
+		return fmt.Errorf("failed to update todo: %w", err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rows == 0 {
+		return ErrToDoNotFound
+	}
+
+	return nil
+}
