@@ -43,3 +43,39 @@ func (s *Store) GetToDoByID(id string) (*models.ToDo, error) {
 
 	return &todo, nil
 }
+
+func (s *Store) GetTodosByUserID(userID string) ([]*models.ToDo, error) {
+	query := `SELECT id, user_id, title, desription, completed, created_at, updated_at
+						FROM todos WHERE user_id = ? ORDER BY created_at DESC`
+
+	rows, err := s.db.Query(query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query todos: %w", err)
+
+	}
+	defer rows.Close()
+
+	var todos []*models.ToDo
+	for rows.Next() {
+		var todo models.ToDo
+		err := rows.Scan(
+			&todo.ID,
+			&todo.UserID,
+			&todo.Title,
+			&todo.Description,
+			&todo.Completed,
+			&todo.CreatedAt,
+			&todo.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan todo: %w", err)
+		}
+		todos = append(todos, &todo)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating todos", err)
+	}
+
+	return todos, nil
+}
