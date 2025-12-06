@@ -153,6 +153,9 @@ func (h *TodoHandler) Update(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Todo ID required", http.StatusBadRequest)
 	}
 
+	// Claude's feedback on abstracting this logic out. Interesting:
+	// My honest take: This is borderline over-engineering for two call sites. But if you expect more handlers to need
+	// this pattern, go for it.
 	todo, err := h.store.GetTodoByID(todoID)
 	if err != nil {
 		if errors.Is(err, store.ErrTodoNotFound) {
