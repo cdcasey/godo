@@ -70,6 +70,7 @@ func (h *TodoHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if err := h.store.CreateTodo(todo); err != nil {
 		h.logger.Error("Failed to create todo", "error", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
 	}
 
 	h.logger.Info("Todo created", "todo_id", todo.ID, "user_id", claims.UserID)
@@ -88,7 +89,7 @@ func (h *TodoHandler) List(w http.ResponseWriter, r *http.Request) {
 	var todos []*models.Todo
 	var err error
 
-	if claims.Role == "admin" {
+	if claims.Role == models.RoleAdmin {
 		todos, err = h.store.GetAllTodos()
 	} else {
 		todos, err = h.store.GetTodosByUserID(claims.UserID)
@@ -151,6 +152,7 @@ func (h *TodoHandler) Update(w http.ResponseWriter, r *http.Request) {
 	todoID := chi.URLParam(r, "id")
 	if todoID == "" {
 		http.Error(w, "Todo ID required", http.StatusBadRequest)
+		return
 	}
 
 	// Claude's feedback on abstracting this logic out. Interesting:
