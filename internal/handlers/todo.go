@@ -75,7 +75,7 @@ func (h *TodoHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	h.logger.Info("Todo created", "todo_id", todo.ID, "user_id", claims.UserID)
 
-	h.respondJson(w, http.StatusCreated, TodoResponse{Todo: *todo})
+	writeJsonResponse(w, http.StatusCreated, TodoResponse{Todo: *todo}, h.logger)
 }
 
 // Handler for listing all todos
@@ -103,7 +103,7 @@ func (h *TodoHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	h.logger.Info("Todos listed", "user_id", claims.UserID, "count", len(todos))
 
-	h.respondJson(w, http.StatusOK, TodosResponse{Todos: todos})
+	writeJsonResponse(w, http.StatusOK, TodosResponse{Todos: todos}, h.logger)
 }
 
 // Handler for getting a single todo
@@ -138,7 +138,7 @@ func (h *TodoHandler) GetById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.respondJson(w, http.StatusOK, TodoResponse{Todo: *todo})
+	writeJsonResponse(w, http.StatusOK, TodoResponse{Todo: *todo}, h.logger)
 }
 
 // Handler to update a todo
@@ -201,7 +201,7 @@ func (h *TodoHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	h.logger.Info("Todo updated", "todo_id", todoID, "user_id", claims.UserID)
 
-	h.respondJson(w, http.StatusOK, TodoResponse{Todo: *todo})
+	writeJsonResponse(w, http.StatusOK, TodoResponse{Todo: *todo}, h.logger)
 }
 
 // Handler to delete a todo

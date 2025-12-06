@@ -2,14 +2,15 @@ package handlers
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 )
 
-func (h *TodoHandler) respondJson(w http.ResponseWriter, statusCode int, data any) {
+func writeJsonResponse(w http.ResponseWriter, statusCode int, data any, logger *slog.Logger) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 
 	if err := json.NewEncoder(w).Encode(data); err != nil {
-		h.logger.Error("Error encoding response", "error", http.StatusInternalServerError)
+		logger.Error("Error encoding response", "error", err)
 	}
 }
