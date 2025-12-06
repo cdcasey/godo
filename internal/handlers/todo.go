@@ -8,6 +8,7 @@ import (
 	"godo/internal/store"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -33,7 +34,7 @@ type CreateTodoRequest struct {
 type UpdateTodoRequest struct {
 	Title       *string `json:"title,omitempty"`
 	Description *string `json:"description,omitempty"`
-	Completed   *string `json:"completed,omitempty"`
+	Completed   *bool   `json:"completed,omitempty"`
 }
 
 type TodoResponse struct {
@@ -139,5 +140,65 @@ func (h *TodoHandler) GetById(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "Application/json")
+	json.NewEncoder(w).Encode(TodoResponse{Todo: *todo})
+}
+
+// Handler to update a todo
+func (h *TodoHandler) Update(w http.ResponseWriter, r *http.Request) {
+	claims, ok := auth.GetClaims(r.Context())
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	todoID := chi.URLParam(r, "id")
+	if todoID == "" {
+		http.Error(w, "Todo ID required", http.StatusBadRequest)
+	}
+
+	todo, err := h.store.GetTodoByID(todoID)
+	if err != nil {
+		if errors.Is(err, store.ErrTodoNotFound) {
+			http.Error(w, "Todo not found", http.StatusNotFound)
+			return
+		}
+		h.logger.Error("Failed to get todo", "error", err, "todo_id", todoID)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// Users can only update their own todos
+	if claims.Role != models.RoleAdmin && todo.UserID != claims.UserID {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	var req UpdateTodoRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.logger.Warn("Invalid request body", "error", err)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.Title != nil {
+		todo.Title = *req.Title
+	}
+	if req.Description != nil {
+		todo.Description = *req.Description
+	}
+	if req.Completed != nil {
+		todo.Completed = *req.Completed
+	}
+	todo.UpdatedAt = time.Now()
+
+	if err := h.store.UpdateTodo(todo); err != nil {
+		h.logger.Error("Failed to update todo", "error", err, "todo_id", todoID)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	h.logger.Info("Todo updated", "todo_id", todoID, "user_id", claims.UserID)
+
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(TodoResponse{Todo: *todo})
 }
