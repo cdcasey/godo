@@ -9,6 +9,8 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type AuthHandler struct {
@@ -146,4 +148,38 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(resp)
+}
+
+func (h *TodoHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	claims, ok := auth.GetClaims(r.Context())
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Admin only
+	if claims.Role != models.RoleAdmin {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	todoID := chi.URLParam(r, "id")
+	if todoID == "" {
+		http.Error(w, "Todo ID required", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.store.DeleteTodo(todoID); err != nil {
+		if errors.Is(err, store.ErrTodoNotFound) {
+			http.Error(w, "Todo not found", http.StatusNotFound)
+			return
+		}
+		h.logger.Error("Failed to delete todo", "error", err, "todo_id", todoID)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	h.logger.Info("Todo deleted", "todo_id", todoID, "admin_id", claims.UserID)
+
+	w.WriteHeader(http.StatusNoContent)
 }
