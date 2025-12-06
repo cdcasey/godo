@@ -74,9 +74,7 @@ func (h *TodoHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	h.logger.Info("Todo created", "todo_id", todo.ID, "user_id", claims.UserID)
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(TodoResponse{Todo: *todo})
+	h.respondJson(w, http.StatusCreated, TodoResponse{Todo: *todo})
 }
 
 // Handler for listing all todos
@@ -104,8 +102,7 @@ func (h *TodoHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	h.logger.Info("Todos listed", "user_id", claims.UserID, "count", len(todos))
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(TodosResponse{Todos: todos})
+	h.respondJson(w, http.StatusOK, TodosResponse{Todos: todos})
 }
 
 // Handler for getting a single todo
@@ -119,6 +116,7 @@ func (h *TodoHandler) GetById(w http.ResponseWriter, r *http.Request) {
 	todoID := chi.URLParam(r, "id")
 	if todoID == "" {
 		http.Error(w, "Todo ID required", http.StatusBadRequest)
+		return
 	}
 
 	todo, err := h.store.GetTodoByID(todoID)
@@ -139,8 +137,7 @@ func (h *TodoHandler) GetById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "Application/json")
-	json.NewEncoder(w).Encode(TodoResponse{Todo: *todo})
+	h.respondJson(w, http.StatusOK, TodoResponse{Todo: *todo})
 }
 
 // Handler to update a todo
@@ -199,6 +196,5 @@ func (h *TodoHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	h.logger.Info("Todo updated", "todo_id", todoID, "user_id", claims.UserID)
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(TodoResponse{Todo: *todo})
+	h.respondJson(w, http.StatusOK, TodoResponse{Todo: *todo})
 }
