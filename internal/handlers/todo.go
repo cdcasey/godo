@@ -73,3 +73,31 @@ func (h *TodoHandler) Create(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(TodoResponse{Todo: *todo})
 }
+
+func (h *TodoHandler) List(w http.ResponseWriter, r *http.Request) {
+	claims, ok := auth.GetClaims(r.Context())
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var todos []*models.Todo
+	var err error
+
+	if claims.Role == "admin" {
+		todos, err = h.store.GetAllTodos()
+	} else {
+		todos, err = h.store.GetTodosByUserID(claims.UserID)
+	}
+
+	if err != nil {
+		h.logger.Error("Failed to get todos", "error", err, "user_id", claims.UserID)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	h.logger.Info("Todos listed", "user_id", claims.UserID, "count", len(todos))
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(TodosResponse{Todos: todos})
+}
