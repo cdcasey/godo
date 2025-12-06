@@ -30,7 +30,7 @@ type CreateTodoRequest struct {
 }
 
 // Note: UpdateTodoRequest uses pointers to distinguish between "not provided" and "set to empty/false".
-type UpdateTodosRequest struct {
+type UpdateTodoRequest struct {
 	Title       *string `json:"title,omitempty"`
 	Description *string `json:"description,omitempty"`
 	Completed   *string `json:"completed,omitempty"`
