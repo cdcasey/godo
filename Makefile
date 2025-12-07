@@ -1,5 +1,9 @@
 .PHONY: help build test migrate-up migrate-down docker-build docker-up docker-down lint clean run
 
+# Load .env file if it exists
+-include .env
+export
+
 # Variables
 BINARY_NAME=godo
 DOCKER_IMAGE=godo:latest
@@ -50,6 +54,32 @@ docker-up: ## Start services with docker-compose
 docker-down: ## Stop services
 	@echo "Stopping services..."
 	@docker-compose down
+
+# --- New Migration Target ---
+gcp-migrate-up: ## Run database migrations up against the remote Turso DB
+	@echo "Running Turso migrations up..."
+	@if [ -z "$(DATABASE_AUTH_TOKEN)" ]; then \
+		echo "Error: DATABASE_AUTH_TOKEN environment variable is required for migrations"; \
+		exit 1; \
+	fi
+	# Note the format for passing the auth token in the connection string
+	migrate -path $(MIGRATIONS_PATH) -database "libsql://godo-cdcasey.aws-us-east-2.turso.io?authToken=$(DATABASE_AUTH_TOKEN)" up
+
+# --- Updated Deployment Target ---
+gcp-deploy: gcp-migrate-up ## Deploy to Google Cloud Run (runs migrations first)
+	@echo "Deploying to Cloud Run..."
+	# This check is technically redundant due to gcp-migrate-up dependency, but is harmless.
+	@if [ -z "$(DATABASE_AUTH_TOKEN)" ]; then \
+		echo "Error: DATABASE_AUTH_TOKEN environment variable is required"; \
+		exit 1; \
+	fi
+	gcloud run deploy godo-api \
+		--source . \
+		--platform managed \
+		--region us-central1 \
+		--allow-unauthenticated \
+		--set-env-vars "DATABASE_URL=libsql://godo-cdcasey.aws-us-east-2.turso.io,DATABASE_AUTH_TOKEN=$(DATABASE_AUTH_TOKEN)" \
+		--set-env-vars "JWT_SECRET=$(shell openssl rand -base64 32),LOG_LEVEL=info,LOG_FORMAT=json"
 
 lint: ## Run golangci-lint
 	@echo "Running linter..."

@@ -1,8 +1,9 @@
 # Build stage
-FROM golang:1.25.4-alpine AS builder
+# FROM golang:1.25.4-alpine AS builder
+FROM golang:1.25.4 AS builder
 
 # Install build dependencies
-RUN apk add --no-cache gcc musl-dev
+# RUN apk add --no-cache gcc musl-dev
 
 WORKDIR /app
 
@@ -17,11 +18,16 @@ COPY . .
 RUN CGO_ENABLED=1 go build -o godo ./cmd/api
 
 # Runtime stage
-FROM alpine:latest
+# FROM alpine:latest
+FROM debian:bookworm-slim
 
 # Install ca-certificates for HTTPS and create non-root user
-RUN apk add --no-cache ca-certificates \
-    && adduser -D -g '' appuser
+# RUN apk add --no-cache ca-certificates \
+#     && adduser -D -g '' appuser
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --create-home --shell /bin/false appuser
 
 WORKDIR /app
 
