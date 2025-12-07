@@ -43,3 +43,8 @@ func GetClaims(ctx context.Context) (*Claims, bool) {
 	claims, ok := ctx.Value(userContextKey).(*Claims)
 	return claims, ok
 }
+
+// SetClaims adds claims to context - used for testing
+func SetClaims(ctx context.Context, claims *Claims) context.Context {
+	return context.WithValue(ctx, userContextKey, claims)
+}

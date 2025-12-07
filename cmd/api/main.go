@@ -1,6 +1,7 @@
 package main
 
 import (
+	"godo/internal/auth"
 	"godo/internal/config"
 	"godo/internal/handlers"
 	"godo/internal/store"
@@ -36,6 +37,7 @@ func main() {
 	logger.Info("Database migrations completed")
 
 	authHandler := handlers.NewAuthHandler(db, logger, cfg.JWTSecret)
+	todoHandler := handlers.NewTodoHandler(db, logger)
 
 	r := chi.NewRouter()
 
@@ -48,6 +50,15 @@ func main() {
 	r.Get("/api/health", healthHandler())
 	r.Post("/api/register", authHandler.Register)
 	r.Post("/api/login", authHandler.Login)
+
+	r.Route("/api/todos", func(r chi.Router) {
+		r.Use(auth.Middleware(cfg.JWTSecret))
+		r.Post("/", todoHandler.Create)
+		r.Get("/", todoHandler.List)
+		r.Get("/{id}", todoHandler.GetById)
+		r.Patch("/{id}", todoHandler.Update)
+		r.Delete("/{id}", todoHandler.Delete)
+	})
 
 	addr := ":" + cfg.Port
 	logger.Info("Server starting", "port", cfg.Port)

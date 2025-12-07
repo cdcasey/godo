@@ -7,3 +7,12 @@ type UserStore interface {
 	GetUserByEmail(email string) (*models.User, error)
 	GetUserByID(id string) (*models.User, error)
 }
+
+type TodoStore interface {
+	CreateTodo(todo *models.Todo) error
+	GetTodoByID(id string) (*models.Todo, error)
+	GetTodosByUserID(userID string) ([]*models.Todo, error)
+	GetAllTodos() ([]*models.Todo, error)
+	UpdateTodo(todo *models.Todo) error
+	DeleteTodo(id string) error
+}
