@@ -8,12 +8,13 @@ import (
 )
 
 type Config struct {
-	Port           string
-	DatabaseURL    string
-	JWTSecret      string
-	LogLevel       string
-	LogFormat      string
-	AllowedOrigins string
+	Port              string
+	DatabaseURL       string
+	DatabaseAuthToken string
+	JWTSecret         string
+	LogLevel          string
+	LogFormat         string
+	AllowedOrigins    string
 }
 
 func Load() (*Config, error) {
@@ -21,12 +22,13 @@ func Load() (*Config, error) {
 	_ = godotenv.Load()
 
 	cfg := &Config{
-		Port:           getEnv("PORT", "8080"),
-		DatabaseURL:    getEnv("DATABASE_URL", ""),
-		JWTSecret:      getEnv("JWT_SECRET", ""),
-		LogLevel:       getEnv("LOG_LEVEL", "info"),
-		LogFormat:      getEnv("LOG_FORMAT", "json"),
-		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "http://localhost:3000"),
+		Port:              getEnv("PORT", "8080"),
+		DatabaseURL:       getEnv("DATABASE_URL", ""),
+		DatabaseAuthToken: getEnv("DATABASE_AUTH_TOKEN", ""),
+		JWTSecret:         getEnv("JWT_SECRET", ""),
+		LogLevel:          getEnv("LOG_LEVEL", "info"),
+		LogFormat:         getEnv("LOG_FORMAT", "json"),
+		AllowedOrigins:    getEnv("ALLOWED_ORIGINS", "http://localhost:3000"),
 	}
 
 	// Validate required fields

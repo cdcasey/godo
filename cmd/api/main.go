@@ -23,7 +23,7 @@ func main() {
 	logger := setupLogger(cfg.LogLevel, cfg.LogFormat)
 	logger.Info("Starting todo API server")
 
-	db, err := store.New(cfg.DatabaseURL)
+	db, err := store.New(cfg.DatabaseURL, cfg.DatabaseAuthToken)
 	if err != nil {
 		logger.Error("Failed to initialize database", "error", err)
 		os.Exit(1)
