@@ -86,7 +86,7 @@ func (h *TodoHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var todos []*models.Todo
+	todos := make([]*models.Todo, 0)
 	var err error
 
 	if claims.Role == models.RoleAdmin {
