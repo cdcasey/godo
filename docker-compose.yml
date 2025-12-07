@@ -1,0 +1,33 @@
+services:
+    api:
+        build: .
+        image: godo:latest
+        ports:
+            - "8080:8080"
+        environment:
+            - PORT=8080
+            - DATABASE_URL=/data/todos.db
+            - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
+            - LOG_LEVEL=info
+            - LOG_FORMAT=json
+            - ALLOWED_ORIGINS=http://localhost:3000
+        volumes:
+            - godo-data:/data
+        restart: unless-stopped
+        healthcheck:
+            test:
+                [
+                    "CMD",
+                    "wget",
+                    "-q",
+                    "--spider",
+                    "http://localhost:8080/api/health",
+                ]
+            # test: wget -q --spider http://localhost:8080/api/health || exit 1
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 5s
+
+volumes:
+    godo-data:
