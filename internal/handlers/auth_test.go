@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"godo/internal/models"
 	"godo/internal/store"
+	"godo/internal/testutil"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 )
@@ -17,17 +17,7 @@ import (
 func setupTestHandler(t *testing.T) (*AuthHandler, *store.Store) {
 	t.Helper()
 
-	dbPath := filepath.Join(t.TempDir(), "test.db")
-	testStore, err := store.New(dbPath)
-	if err != nil {
-		t.Fatalf("Failed to create test store: %v", err)
-	}
-
-	if err := testStore.RunMigrations("../../migrations"); err != nil {
-		t.Fatalf("Failed to run migrations: %v", err)
-	}
-
-	t.Cleanup(func() { testStore.Close() })
+	testStore := testutil.SetupTestStore(t)
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 

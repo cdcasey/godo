@@ -1,25 +1,13 @@
 package store
 
 import (
-	"path/filepath"
+	"godo/internal/testutil"
 	"testing"
 )
 
 func setupTestStore(t *testing.T) *Store {
 	t.Helper()
-	dbPath := filepath.Join(t.TempDir(), "test.db")
-
-	store, err := New(dbPath)
-	if err != nil {
-		t.Fatalf("Failed to create test store: %v", err)
-	}
-
-	if err := store.RunMigrations("../../migrations"); err != nil {
-		t.Fatalf("failed to run migrations: %v", err)
-	}
-
-	t.Cleanup(func() { store.Close() })
-	return store
+	return testutil.SetupTestStore(t)
 }
 
 func TestNew_Success(t *testing.T) {
