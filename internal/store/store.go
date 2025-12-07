@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/tursodatabase/go-libsql"
 )
 
 var (
@@ -44,7 +44,7 @@ func (s *Store) RunMigrations(migratopnPath string) error {
 	// Create migrations table if not exists
 	_, err := s.db.Exec(`
 		CREATE TABLE IF NOT EXISTS schema_migrations (
-			version TEXT PRIMARY KEY
+			version TEXT PRIMARY KEY,
 			applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 			)
 	`)
@@ -84,7 +84,7 @@ func (s *Store) RunMigrations(migratopnPath string) error {
 		// Read and execute migrations
 		content, err := os.ReadFile(filepath.Join(migratopnPath, fileName))
 		if err != nil {
-			fmt.Errorf("failed to read migration %s: %w", fileName, err)
+			return fmt.Errorf("failed to read migration %s: %w", fileName, err)
 		}
 
 		_, err = s.db.Exec(string(content))
