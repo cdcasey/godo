@@ -23,7 +23,6 @@ services:
                     "--spider",
                     "http://localhost:8080/api/health",
                 ]
-            # test: wget -q --spider http://localhost:8080/api/health || exit 1
             interval: 30s
             timeout: 10s
             retries: 3
