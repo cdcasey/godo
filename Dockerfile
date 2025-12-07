@@ -1,6 +1,7 @@
 # Build stage
-# FROM golang:1.25.4-alpine AS builder
-FROM golang:1.25.4 AS builder
+# bookworm is required because Alpine uses Musl libc, which is incompatible
+# with the pre-compiled glibc dependencies in the Turso (libsql) driver.
+FROM golang:1.25.4-bookworm AS builder
 
 # Install build dependencies
 # RUN apk add --no-cache gcc musl-dev

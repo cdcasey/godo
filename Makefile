@@ -55,20 +55,9 @@ docker-down: ## Stop services
 	@echo "Stopping services..."
 	@docker-compose down
 
-# --- New Migration Target ---
-gcp-migrate-up: ## Run database migrations up against the remote Turso DB
-	@echo "Running Turso migrations up..."
-	@if [ -z "$(DATABASE_AUTH_TOKEN)" ]; then \
-		echo "Error: DATABASE_AUTH_TOKEN environment variable is required for migrations"; \
-		exit 1; \
-	fi
-	# Note the format for passing the auth token in the connection string
-	migrate -path $(MIGRATIONS_PATH) -database "libsql://godo-cdcasey.aws-us-east-2.turso.io?authToken=$(DATABASE_AUTH_TOKEN)" up
-
-# --- Updated Deployment Target ---
-gcp-deploy: gcp-migrate-up ## Deploy to Google Cloud Run (runs migrations first)
+# --- Deployment Target ---
+gcp-deploy: ## Deploy to Google Cloud Run (app runs migrations on startup)
 	@echo "Deploying to Cloud Run..."
-	# This check is technically redundant due to gcp-migrate-up dependency, but is harmless.
 	@if [ -z "$(DATABASE_AUTH_TOKEN)" ]; then \
 		echo "Error: DATABASE_AUTH_TOKEN environment variable is required"; \
 		exit 1; \
