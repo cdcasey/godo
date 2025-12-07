@@ -55,7 +55,7 @@ func (s *Store) GetTodosByUserID(userID string) ([]*models.Todo, error) {
 	}
 	defer rows.Close()
 
-	var todos []*models.Todo
+	todos := make([]*models.Todo, 0)
 	for rows.Next() {
 		var todo models.Todo
 		err := rows.Scan(
@@ -90,7 +90,7 @@ func (s *Store) GetAllTodos() ([]*models.Todo, error) {
 	}
 	defer rows.Close()
 
-	var todos []*models.Todo
+	todos := make([]*models.Todo, 0)
 	for rows.Next() {
 		var todo models.Todo
 		err := rows.Scan(
