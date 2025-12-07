@@ -1,13 +1,26 @@
 package store
 
 import (
-	"godo/internal/testutil"
+	"path/filepath"
 	"testing"
 )
 
+// This file can't use testutil.setupTestStore because of cicular imports
 func setupTestStore(t *testing.T) *Store {
 	t.Helper()
-	return testutil.SetupTestStore(t)
+	dbPath := "file:" + filepath.Join(t.TempDir(), "test.db")
+
+	s, err := New(dbPath, "")
+	if err != nil {
+		t.Fatalf("Failed to create test store: %v", err)
+	}
+
+	if err := s.RunMigrations("../../migrations"); err != nil {
+		t.Fatalf("Failed to run migrations: %v", err)
+	}
+
+	t.Cleanup(func() { s.Close() })
+	return s
 }
 
 func TestNew_Success(t *testing.T) {

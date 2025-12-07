@@ -67,11 +67,13 @@ func requestWithClaimsAndID(req *http.Request, claims *auth.Claims, paramName, p
 }
 
 func TestCreate_Success(t *testing.T) {
-	handler, _ := setupTodoTestHandler(t)
+	handler, testStore := setupTodoTestHandler(t)
 
-	user := &auth.Claims{
-		UserID: models.NewID(),
-		Email:  "test@example.com",
+	user := createTestUser(t, testStore, models.RoleUser)
+
+	claims := &auth.Claims{
+		UserID: user.ID,
+		Email:  user.Email,
 		Role:   models.RoleUser,
 	}
 
@@ -83,7 +85,7 @@ func TestCreate_Success(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodPost, "/api/todos", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
-	req = requestWithClaims(req, user)
+	req = requestWithClaims(req, claims)
 	rec := httptest.NewRecorder()
 
 	handler.Create(rec, req)
@@ -101,8 +103,8 @@ func TestCreate_Success(t *testing.T) {
 		t.Errorf("Expected title %s, got %s", reqBody.Title, resp.Todo.Title)
 	}
 
-	if resp.Todo.UserID != user.UserID {
-		t.Errorf("Expected user_id %s, got %s", user.UserID, resp.Todo.UserID)
+	if resp.Todo.UserID != user.ID {
+		t.Errorf("Expected user_id %s, got %s", user.ID, resp.Todo.UserID)
 	}
 
 	if resp.Todo.Completed {
