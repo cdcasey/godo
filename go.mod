@@ -11,7 +11,9 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.19.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
+	github.com/libsql/sqlite-antlr4-parser v0.0.0-20240327125255-dbf53b6cbf06 // indirect
 	github.com/mattn/go-sqlite3 v1.14.32 // indirect
+	github.com/tursodatabase/go-libsql v0.0.0-20251025125656-00da49cd4a6e // indirect
 	github.com/tursodatabase/libsql-client-go v0.0.0-20251205113610-b69dd6e475fc // indirect
 	golang.org/x/crypto v0.45.0 // indirect
 	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8 // indirect
