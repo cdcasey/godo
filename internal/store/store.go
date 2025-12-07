@@ -4,10 +4,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
 
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/sqlite3"
-	"github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -20,8 +21,13 @@ type Store struct {
 	db *sql.DB
 }
 
-func New(databaseURL string) (*Store, error) {
-	db, err := sql.Open("sqlite3", databaseURL)
+func New(databaseURL string, authToken string) (*Store, error) {
+	connStr := databaseURL
+	if authToken != "" {
+		connStr = fmt.Sprintf("%s?authToken=%s", databaseURL, authToken)
+	}
+
+	db, err := sql.Open("libsql", connStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
@@ -31,26 +37,66 @@ func New(databaseURL string) (*Store, error) {
 	}
 
 	return &Store{db: db}, nil
+
 }
 
 func (s *Store) RunMigrations(migratopnPath string) error {
-	driver, err := sqlite3.WithInstance(s.db, &sqlite3.Config{})
+	// Create migrations table if not exists
+	_, err := s.db.Exec(`
+		CREATE TABLE IF NOT EXISTS schema_migrations (
+			version TEXT PRIMARY KEY
+			applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			)
+	`)
 	if err != nil {
-		return fmt.Errorf("failed to create migration driver: %w", err)
+		return fmt.Errorf("failed to create migrations table: %w", err)
 	}
 
-	fileSource, err := (&file.File{}).Open("file://" + migratopnPath)
+	// Read migration files
+	files, err := os.ReadDir(migratopnPath)
 	if err != nil {
-		return fmt.Errorf("failed to open migrations: %w", err)
+		return fmt.Errorf("failed to read migrations directory: %w", err)
 	}
 
-	m, err := migrate.NewWithInstance("file", fileSource, "sqlite3", driver)
-	if err != nil {
-		return fmt.Errorf("failed to create migration instance: %w", err)
+	// Get .up.sql files and sort them
+	var upFiles []string
+	for _, f := range files {
+		if strings.HasSuffix(f.Name(), ".up.sql") {
+			upFiles = append(upFiles, f.Name())
+		}
 	}
+	sort.Strings(upFiles)
 
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-		return fmt.Errorf("failed to run migrations: %w", err)
+	// Run each migration
+	for _, fileName := range upFiles {
+		version := strings.TrimSuffix(fileName, ".up.sql")
+
+		// Check is already applied
+		var count int
+		err := s.db.QueryRow("SELECT COUNT(*) FROM schema_migrations WHERE version = ?", version).Scan(&count)
+		if err != nil {
+			return fmt.Errorf("failed to check migrations status: %w", err)
+		}
+		if count > 0 {
+			continue
+		}
+
+		// Read and execute migrations
+		content, err := os.ReadFile(filepath.Join(migratopnPath, fileName))
+		if err != nil {
+			fmt.Errorf("failed to read migration %s: %w", fileName, err)
+		}
+
+		_, err = s.db.Exec(string(content))
+		if err != nil {
+			return fmt.Errorf("failed to run migration %s: %w", fileName, err)
+		}
+
+		// Record migration
+		_, err = s.db.Exec("INSERT INTO schema_migrations (version) VALUES (?)", version)
+		if err != nil {
+			return fmt.Errorf("failed to record migration %s: %w", fileName, err)
+		}
 	}
 
 	return nil
