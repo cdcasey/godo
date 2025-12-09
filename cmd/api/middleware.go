@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/go-chi/httprate"
 )
 
 func loggerMiddleware(logger *slog.Logger) func(http.Handler) http.Handler {
@@ -40,4 +41,20 @@ func corsMiddleware(allowedOrigins string) func(http.Handler) http.Handler {
 		AllowCredentials: true,
 		MaxAge:           300,
 	})
+}
+
+func authRateLimiter(logger *slog.Logger) func(http.Handler) http.Handler {
+	return httprate.Limit(
+		5,
+		time.Minute,
+		httprate.WithKeyFuncs(httprate.KeyByIP, httprate.KeyByEndpoint),
+		httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
+			logger.Warn("rate limit exceeded",
+				"ip", r.RemoteAddr,
+				"path", r.URL.Path,
+				"request_id", middleware.GetReqID(r.Context()),
+			)
+			http.Error(w, `{"error": "too many requests"}`, http.StatusTooManyRequests)
+		}),
+	)
 }
