@@ -62,13 +62,18 @@ gcp-deploy: ## Deploy to Google Cloud Run (app runs migrations on startup)
 		echo "Error: DATABASE_AUTH_TOKEN environment variable is required"; \
 		exit 1; \
 	fi
+	@if [ -z "$(JWT_SECRET)" ]; then \
+	  echo "Error: JWT_SECRET environment variable is required"; \
+		exit 1; \
+  fi
 	gcloud run deploy godo-api \
 		--source . \
 		--platform managed \
 		--region us-central1 \
 		--allow-unauthenticated \
 		--set-env-vars "DATABASE_URL=libsql://godo-cdcasey.aws-us-east-2.turso.io,DATABASE_AUTH_TOKEN=$(DATABASE_AUTH_TOKEN)" \
-		--set-env-vars "JWT_SECRET=$(shell openssl rand -base64 32),LOG_LEVEL=info,LOG_FORMAT=json"
+		# --set-env-vars "JWT_SECRET=$(shell openssl rand -base64 32),LOG_LEVEL=info,LOG_FORMAT=json"
+		--set-env-vars "JWT_SECRET=$(JWT_SECRET),LOG_LEVEL=info,LOG_FORMAT=json"
 
 lint: ## Run golangci-lint
 	@echo "Running linter..."
