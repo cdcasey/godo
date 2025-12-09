@@ -48,8 +48,9 @@ func main() {
 	r.Use(corsMiddleware(cfg.AllowedOrigins))
 
 	r.Get("/api/health", healthHandler())
-	r.Post("/api/register", authHandler.Register)
-	r.Post("/api/login", authHandler.Login)
+
+	r.With(authRateLimiter(logger)).Post("/api/register", authHandler.Register)
+	r.With(authRateLimiter(logger)).Post("/api/login", authHandler.Login)
 
 	r.Route("/api/todos", func(r chi.Router) {
 		r.Use(auth.Middleware(cfg.JWTSecret))
