@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -76,4 +77,31 @@ func TestMiddleware(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetClaims(t *testing.T) {
+	t.Run("claims present", func(t *testing.T) {
+		claims := &Claims{UserID: "user-123", Email: "test@example.com", Role: "admin"}
+		ctx := SetClaims(context.Background(), claims)
+
+		got, ok := GetClaims(ctx)
+		if !ok {
+			t.Fatal("expected ok=true")
+		}
+		if got.UserID != "user-123" {
+			t.Errorf("expected UserID 'user-123', got '%s'", got.UserID)
+		}
+		if got.Role != "admin" {
+			t.Errorf("expected Role 'admin', got '%s'", got.Role)
+		}
+	})
+
+	t.Run("claims missing", func(t *testing.T) {
+		ctx := context.Background()
+
+		_, ok := GetClaims(ctx)
+		if ok {
+			t.Error("expected ok=false for empty context")
+		}
+	})
 }
