@@ -40,7 +40,7 @@ func New(databaseURL string, authToken string) (*Store, error) {
 
 }
 
-func (s *Store) RunMigrations(migratopnPath string) error {
+func (s *Store) RunMigrations(migrationPath string) error {
 	// Create migrations table if not exists
 	_, err := s.db.Exec(`
 		CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -53,7 +53,7 @@ func (s *Store) RunMigrations(migratopnPath string) error {
 	}
 
 	// Read migration files
-	files, err := os.ReadDir(migratopnPath)
+	files, err := os.ReadDir(migrationPath)
 	if err != nil {
 		return fmt.Errorf("failed to read migrations directory: %w", err)
 	}
@@ -82,7 +82,7 @@ func (s *Store) RunMigrations(migratopnPath string) error {
 		}
 
 		// Read and execute migrations
-		content, err := os.ReadFile(filepath.Join(migratopnPath, fileName))
+		content, err := os.ReadFile(filepath.Join(migrationPath, fileName))
 		if err != nil {
 			return fmt.Errorf("failed to read migration %s: %w", fileName, err)
 		}
