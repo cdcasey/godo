@@ -55,6 +55,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	if len(req.Password) < 8 {
 		http.Error(w, "Password must be at least 8 characters", http.StatusBadRequest)
+		return
 	}
 
 	user, err := h.authService.Register(req.Email, req.Password)
