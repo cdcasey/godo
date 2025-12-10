@@ -17,11 +17,7 @@ var (
 	ErrTodoNotFound = errors.New("todo not found")
 )
 
-type Store struct {
-	db *sql.DB
-}
-
-func New(databaseURL string, authToken string) (*Store, error) {
+func NewDB(databaseURL string, authToken string) (*sql.DB, error) {
 	connStr := databaseURL
 	if authToken != "" {
 		connStr = fmt.Sprintf("%s?authToken=%s", databaseURL, authToken)
@@ -36,29 +32,25 @@ func New(databaseURL string, authToken string) (*Store, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	return &Store{db: db}, nil
-
+	return db, nil
 }
 
-func (s *Store) RunMigrations(migrationPath string) error {
-	// Create migrations table if not exists
-	_, err := s.db.Exec(`
+func RunMigrations(db *sql.DB, migrationPath string) error {
+	_, err := db.Exec(`
 		CREATE TABLE IF NOT EXISTS schema_migrations (
 			version TEXT PRIMARY KEY,
 			applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-			)
+		)
 	`)
 	if err != nil {
 		return fmt.Errorf("failed to create migrations table: %w", err)
 	}
 
-	// Read migration files
 	files, err := os.ReadDir(migrationPath)
 	if err != nil {
 		return fmt.Errorf("failed to read migrations directory: %w", err)
 	}
 
-	// Get .up.sql files and sort them
 	var upFiles []string
 	for _, f := range files {
 		if strings.HasSuffix(f.Name(), ".up.sql") {
@@ -67,41 +59,33 @@ func (s *Store) RunMigrations(migrationPath string) error {
 	}
 	sort.Strings(upFiles)
 
-	// Run each migration
 	for _, fileName := range upFiles {
 		version := strings.TrimSuffix(fileName, ".up.sql")
 
-		// Check is already applied
 		var count int
-		err := s.db.QueryRow("SELECT COUNT(*) FROM schema_migrations WHERE version = ?", version).Scan(&count)
+		err := db.QueryRow("SELECT COUNT(*) FROM schema_migrations WHERE version = ?", version).Scan(&count)
 		if err != nil {
-			return fmt.Errorf("failed to check migrations status: %w", err)
+			return fmt.Errorf("failed to check migration status: %w", err)
 		}
 		if count > 0 {
 			continue
 		}
 
-		// Read and execute migrations
 		content, err := os.ReadFile(filepath.Join(migrationPath, fileName))
 		if err != nil {
 			return fmt.Errorf("failed to read migration %s: %w", fileName, err)
 		}
 
-		_, err = s.db.Exec(string(content))
+		_, err = db.Exec(string(content))
 		if err != nil {
 			return fmt.Errorf("failed to run migration %s: %w", fileName, err)
 		}
 
-		// Record migration
-		_, err = s.db.Exec("INSERT INTO schema_migrations (version) VALUES (?)", version)
+		_, err = db.Exec("INSERT INTO schema_migrations (version) VALUES (?)", version)
 		if err != nil {
 			return fmt.Errorf("failed to record migration %s: %w", fileName, err)
 		}
 	}
 
 	return nil
-}
-
-func (s *Store) Close() error {
-	return s.db.Close()
 }
