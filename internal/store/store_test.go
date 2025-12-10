@@ -1,86 +1,66 @@
 package store
 
 import (
+	"database/sql"
 	"path/filepath"
 	"testing"
 )
 
-// This file can't use testutil.setupTestStore because of cicular imports
-func setupTestStore(t *testing.T) *Store {
+func setupTestDB(t *testing.T) *sql.DB {
 	t.Helper()
 	dbPath := "file:" + filepath.Join(t.TempDir(), "test.db")
 
-	s, err := New(dbPath, "")
+	db, err := NewDB(dbPath, "")
 	if err != nil {
-		t.Fatalf("Failed to create test store: %v", err)
+		t.Fatalf("Failed to create test database: %v", err)
 	}
 
-	if err := s.RunMigrations("../../migrations"); err != nil {
+	if err := RunMigrations(db, "../../migrations"); err != nil {
 		t.Fatalf("Failed to run migrations: %v", err)
 	}
 
-	t.Cleanup(func() { s.Close() })
-	return s
+	t.Cleanup(func() { db.Close() })
+	return db
 }
 
-func TestNew_Success(t *testing.T) {
-	store := setupTestStore(t)
+func TestNewDB_Success(t *testing.T) {
+	db := setupTestDB(t)
 
-	if err := store.db.Ping(); err != nil {
+	if err := db.Ping(); err != nil {
 		t.Errorf("failed to ping database: %v", err)
 	}
 }
 
 func TestRunMigrations_Success(t *testing.T) {
-	store := setupTestStore(t)
-
-	// Run migrations
-	migrationsPath := "../../migrations"
-	if err := store.RunMigrations(migrationsPath); err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
+	db := setupTestDB(t)
 
 	// Verify tables exist
 	var tableName string
-	err := store.db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").Scan(&tableName)
+	err := db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").Scan(&tableName)
 	if err != nil {
 		t.Errorf("Users table not found: %v", err)
 	}
 }
 
-func TestClose(t *testing.T) {
-	store := setupTestStore(t)
-
-	if err := store.Close(); err != nil {
-		t.Errorf("expected no error on close, got %v", err)
-	}
-
-	// Verify connection is closed
-	if err := store.db.Ping(); err == nil {
-		t.Error("expected error after close, got nil")
-	}
-}
-
 func TestRunMigrations_InvalidPath(t *testing.T) {
-	store := setupTestStore(t)
+	dbPath := "file:" + filepath.Join(t.TempDir(), "test.db")
+	db, err := NewDB(dbPath, "")
+	if err != nil {
+		t.Fatalf("Failed to create test database: %v", err)
+	}
+	defer db.Close()
 
-	// Try invalid migrations path
-	err := store.RunMigrations("/nonexistent/path")
+	err = RunMigrations(db, "/nonexistent/path")
 	if err == nil {
 		t.Fatal("expected error for invalid migrations path, got nil")
 	}
 }
 
-func TestRunMigrations_Idempodent(t *testing.T) {
-	store := setupTestStore(t)
+func TestRunMigrations_Idempotent(t *testing.T) {
+	db := setupTestDB(t)
 
-	migrationsPath := "../../migrations"
-
-	if err := store.RunMigrations(migrationsPath); err != nil {
-		t.Fatalf("First migration run failed: %v", err)
-	}
-
-	if err := store.RunMigrations(migrationsPath); err != nil {
+	// Running migrations again should not fail
+	if err := RunMigrations(db, "../../migrations"); err != nil {
 		t.Fatalf("Second migration run failed: %v", err)
 	}
 }
