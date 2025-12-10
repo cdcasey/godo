@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"godo/internal/auth"
 	"godo/internal/domain"
 	"godo/internal/service"
@@ -78,4 +79,46 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJsonResponse(w, http.StatusCreated, resp, h.logger)
+}
+
+func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+	var req LoginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.logger.Warn("Invalid request body", "error", err)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.Email == "" || req.Password == "" {
+		http.Error(w, "Email and password are required", http.StatusBadRequest)
+		return
+	}
+
+	user, err := h.authService.Authenticate(req.Email, req.Password)
+	if err != nil {
+		if errors.Is(err, service.ErrInvalidCredentials) {
+			h.logger.Warn("Login attempt failed", "email", req.Email)
+			http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+			return
+		}
+		h.logger.Error("Failed to authenticate user", "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	token, err := auth.GenerateToken(user.ID, user.Email, user.Role, h.jwtSecret, 24*time.Hour)
+	if err != nil {
+		h.logger.Error("Failed to generate token", "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	h.logger.Info("User logged in", "user_id", user.ID)
+
+	resp := AuthResponse{
+		Token: token,
+		User:  *user,
+	}
+
+	writeJsonResponse(w, http.StatusOK, resp, h.logger)
 }
