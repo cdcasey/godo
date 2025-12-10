@@ -4,6 +4,10 @@ type UserRepository interface {
 	Create(user *User) error
 	GetByEmail(email string) (*User, error)
 	GetByID(id string) (*User, error)
+	GetAll() ([]*User, error)
+	Update(user *User) error
+	Delete(id string) error
+	CountByRole(role string) (int, error)
 }
 
 type TodoRepository interface {

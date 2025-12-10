@@ -6,6 +6,8 @@ import (
 	"godo/internal/domain"
 )
 
+// UserRepo Note to self: this implements the UserRepository interface by having all of the required methods.
+// Go does not have an explicit "implements" keyword.
 type UserRepo struct {
 	db *sql.DB
 }
