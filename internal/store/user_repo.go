@@ -75,3 +75,23 @@ func (r *UserRepo) GetByID(id string) (*domain.User, error) {
 
 	return &user, nil
 }
+
+func (r *UserRepo) GetAll() ([]*domain.User, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *UserRepo) Update(user *domain.User) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *UserRepo) Delete(id string) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *UserRepo) CountByRole(role string) (int, error) {
+	//TODO implement me
+	panic("implement me")
+}
