@@ -5,7 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"godo/internal/auth"
-	"godo/internal/models"
+	"godo/internal/domain"
+	"godo/internal/service"
 	"godo/internal/store"
 	"godo/internal/testutil"
 	"log/slog"
@@ -13,42 +14,43 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 )
 
-func setupTodoTestHandler(t *testing.T) (*TodoHandler, *store.Store) {
+func setupTodoTestHandler(t *testing.T) (*TodoHandler, *store.UserRepo, *store.TodoRepo) {
 	t.Helper()
 
-	testStore := testutil.SetupTestStore(t)
+	db := testutil.SetupTestDB(t)
+	userRepo := store.NewUserRepo(db)
+	todoRepo := store.NewTodoRepo(db)
+	todoService := service.NewTodoService(todoRepo)
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 
-	handler := NewTodoHandler(testStore, logger)
+	handler := NewTodoHandler(todoService, logger)
 
-	return handler, testStore
+	return handler, userRepo, todoRepo
 }
 
-func createTestUser(t *testing.T, s *store.Store, role string) *models.User {
+func createTestUser(t *testing.T, userRepo *store.UserRepo, role string) *domain.User {
 	t.Helper()
-	user := &models.User{
-		ID:           models.NewID(),
-		Email:        "test-" + models.NewID() + "@example.com",
+	user := &domain.User{
+		ID:           domain.NewID(),
+		Email:        "test-" + domain.NewID() + "@example.com",
 		PasswordHash: "hashed",
 		Role:         role,
-		CreatedAt:    time.Now(),
 	}
-	if err := s.CreateUser(user); err != nil {
+	if err := userRepo.Create(user); err != nil {
 		t.Fatalf("Failed to create test user: %v", err)
 	}
 	return user
 }
 
-func createTestTodo(t *testing.T, s *store.Store, userID string) *models.Todo {
+func createTestTodo(t *testing.T, todoRepo *store.TodoRepo, userID string) *domain.Todo {
 	t.Helper()
-	todo := models.NewTodo(userID, "Test Todo", "Test Description")
-	if err := s.CreateTodo(todo); err != nil {
+	todo := domain.NewTodo(userID, "Test Todo", "Test Description")
+	if err := todoRepo.Create(todo); err != nil {
 		t.Fatalf("Failed to create test todo: %v", err)
 	}
 	return todo
@@ -67,14 +69,14 @@ func requestWithClaimsAndID(req *http.Request, claims *auth.Claims, paramName, p
 }
 
 func TestCreate_Success(t *testing.T) {
-	handler, testStore := setupTodoTestHandler(t)
+	handler, userRepo, _ := setupTodoTestHandler(t)
 
-	user := createTestUser(t, testStore, models.RoleUser)
+	user := createTestUser(t, userRepo, domain.RoleUser)
 
 	claims := &auth.Claims{
 		UserID: user.ID,
 		Email:  user.Email,
-		Role:   models.RoleUser,
+		Role:   domain.RoleUser,
 	}
 
 	reqBody := CreateTodoRequest{
@@ -145,7 +147,7 @@ func TestCreate_Failures(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler, _ := setupTodoTestHandler(t)
+			handler, _, _ := setupTodoTestHandler(t)
 
 			var body []byte
 			if str, ok := tt.body.(string); ok {
@@ -159,9 +161,9 @@ func TestCreate_Failures(t *testing.T) {
 
 			if tt.withClaims {
 				claims := &auth.Claims{
-					UserID: models.NewID(),
+					UserID: domain.NewID(),
 					Email:  "test@example.com",
-					Role:   models.RoleUser,
+					Role:   domain.RoleUser,
 				}
 				req = requestWithClaims(req, claims)
 			}
@@ -181,20 +183,19 @@ func TestCreate_Failures(t *testing.T) {
 }
 
 func TestList_Success_User(t *testing.T) {
-	handler, testStore := setupTodoTestHandler(t)
+	handler, userRepo, todoRepo := setupTodoTestHandler(t)
 
-	user := createTestUser(t, testStore, models.RoleUser)
-	otherUser := createTestUser(t, testStore, models.RoleUser)
+	user := createTestUser(t, userRepo, domain.RoleUser)
+	otherUser := createTestUser(t, userRepo, domain.RoleUser)
 
-	// Create todos for both users
-	todo1 := createTestTodo(t, testStore, user.ID)
-	todo2 := createTestTodo(t, testStore, user.ID)
-	createTestTodo(t, testStore, otherUser.ID) // should not appear
+	todo1 := createTestTodo(t, todoRepo, user.ID)
+	todo2 := createTestTodo(t, todoRepo, user.ID)
+	createTestTodo(t, todoRepo, otherUser.ID) // should not appear
 
 	claims := &auth.Claims{
 		UserID: user.ID,
 		Email:  user.Email,
-		Role:   models.RoleUser,
+		Role:   domain.RoleUser,
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/api/todos", nil)
@@ -216,7 +217,6 @@ func TestList_Success_User(t *testing.T) {
 		t.Errorf("Expected 2 todos, got %d", len(resp.Todos))
 	}
 
-	// Verify we only got our own todos
 	for _, todo := range resp.Todos {
 		if todo.ID != todo1.ID && todo.ID != todo2.ID {
 			t.Errorf("Unexpected todo ID: %s", todo.ID)
@@ -225,19 +225,18 @@ func TestList_Success_User(t *testing.T) {
 }
 
 func TestList_Success_Admin(t *testing.T) {
-	handler, testStore := setupTodoTestHandler(t)
+	handler, userRepo, todoRepo := setupTodoTestHandler(t)
 
-	user := createTestUser(t, testStore, models.RoleUser)
-	admin := createTestUser(t, testStore, models.RoleAdmin)
+	user := createTestUser(t, userRepo, domain.RoleUser)
+	admin := createTestUser(t, userRepo, domain.RoleAdmin)
 
-	// Create todos for both
-	createTestTodo(t, testStore, user.ID)
-	createTestTodo(t, testStore, admin.ID)
+	createTestTodo(t, todoRepo, user.ID)
+	createTestTodo(t, todoRepo, admin.ID)
 
 	claims := &auth.Claims{
 		UserID: admin.ID,
 		Email:  admin.Email,
-		Role:   models.RoleAdmin,
+		Role:   domain.RoleAdmin,
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/api/todos", nil)
@@ -261,7 +260,7 @@ func TestList_Success_Admin(t *testing.T) {
 }
 
 func TestList_Unauthorized(t *testing.T) {
-	handler, _ := setupTodoTestHandler(t)
+	handler, _, _ := setupTodoTestHandler(t)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/todos", nil)
 	rec := httptest.NewRecorder()
@@ -274,15 +273,15 @@ func TestList_Unauthorized(t *testing.T) {
 }
 
 func TestGetById_Success(t *testing.T) {
-	handler, testStore := setupTodoTestHandler(t)
+	handler, userRepo, todoRepo := setupTodoTestHandler(t)
 
-	user := createTestUser(t, testStore, models.RoleUser)
-	todo := createTestTodo(t, testStore, user.ID)
+	user := createTestUser(t, userRepo, domain.RoleUser)
+	todo := createTestTodo(t, todoRepo, user.ID)
 
 	claims := &auth.Claims{
 		UserID: user.ID,
 		Email:  user.Email,
-		Role:   models.RoleUser,
+		Role:   domain.RoleUser,
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/api/todos/"+todo.ID, nil)
@@ -306,16 +305,16 @@ func TestGetById_Success(t *testing.T) {
 }
 
 func TestGetById_AdminCanViewAny(t *testing.T) {
-	handler, testStore := setupTodoTestHandler(t)
+	handler, userRepo, todoRepo := setupTodoTestHandler(t)
 
-	user := createTestUser(t, testStore, models.RoleUser)
-	admin := createTestUser(t, testStore, models.RoleAdmin)
-	todo := createTestTodo(t, testStore, user.ID)
+	user := createTestUser(t, userRepo, domain.RoleUser)
+	admin := createTestUser(t, userRepo, domain.RoleAdmin)
+	todo := createTestTodo(t, todoRepo, user.ID)
 
 	claims := &auth.Claims{
 		UserID: admin.ID,
 		Email:  admin.Email,
-		Role:   models.RoleAdmin,
+		Role:   domain.RoleAdmin,
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/api/todos/"+todo.ID, nil)
@@ -330,16 +329,16 @@ func TestGetById_AdminCanViewAny(t *testing.T) {
 }
 
 func TestGetById_Forbidden(t *testing.T) {
-	handler, testStore := setupTodoTestHandler(t)
+	handler, userRepo, todoRepo := setupTodoTestHandler(t)
 
-	user := createTestUser(t, testStore, models.RoleUser)
-	otherUser := createTestUser(t, testStore, models.RoleUser)
-	todo := createTestTodo(t, testStore, otherUser.ID)
+	user := createTestUser(t, userRepo, domain.RoleUser)
+	otherUser := createTestUser(t, userRepo, domain.RoleUser)
+	todo := createTestTodo(t, todoRepo, otherUser.ID)
 
 	claims := &auth.Claims{
 		UserID: user.ID,
 		Email:  user.Email,
-		Role:   models.RoleUser,
+		Role:   domain.RoleUser,
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/api/todos/"+todo.ID, nil)
@@ -354,14 +353,14 @@ func TestGetById_Forbidden(t *testing.T) {
 }
 
 func TestGetById_NotFound(t *testing.T) {
-	handler, testStore := setupTodoTestHandler(t)
+	handler, userRepo, _ := setupTodoTestHandler(t)
 
-	user := createTestUser(t, testStore, models.RoleUser)
+	user := createTestUser(t, userRepo, domain.RoleUser)
 
 	claims := &auth.Claims{
 		UserID: user.ID,
 		Email:  user.Email,
-		Role:   models.RoleUser,
+		Role:   domain.RoleUser,
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/api/todos/nonexistent-id", nil)
@@ -376,15 +375,15 @@ func TestGetById_NotFound(t *testing.T) {
 }
 
 func TestUpdate_Success(t *testing.T) {
-	handler, testStore := setupTodoTestHandler(t)
+	handler, userRepo, todoRepo := setupTodoTestHandler(t)
 
-	user := createTestUser(t, testStore, models.RoleUser)
-	todo := createTestTodo(t, testStore, user.ID)
+	user := createTestUser(t, userRepo, domain.RoleUser)
+	todo := createTestTodo(t, todoRepo, user.ID)
 
 	claims := &auth.Claims{
 		UserID: user.ID,
 		Email:  user.Email,
-		Role:   models.RoleUser,
+		Role:   domain.RoleUser,
 	}
 
 	newTitle := "Updated Title"
@@ -419,26 +418,24 @@ func TestUpdate_Success(t *testing.T) {
 		t.Error("Expected completed to be true")
 	}
 
-	// Description should be unchanged
 	if resp.Todo.Description != todo.Description {
 		t.Errorf("Expected description %s, got %s", todo.Description, resp.Todo.Description)
 	}
 }
 
 func TestUpdate_PartialUpdate(t *testing.T) {
-	handler, testStore := setupTodoTestHandler(t)
+	handler, userRepo, todoRepo := setupTodoTestHandler(t)
 
-	user := createTestUser(t, testStore, models.RoleUser)
-	todo := createTestTodo(t, testStore, user.ID)
+	user := createTestUser(t, userRepo, domain.RoleUser)
+	todo := createTestTodo(t, todoRepo, user.ID)
 	originalTitle := todo.Title
 
 	claims := &auth.Claims{
 		UserID: user.ID,
 		Email:  user.Email,
-		Role:   models.RoleUser,
+		Role:   domain.RoleUser,
 	}
 
-	// Only update completed
 	completed := true
 	reqBody := UpdateTodoRequest{
 		Completed: &completed,
@@ -471,16 +468,16 @@ func TestUpdate_PartialUpdate(t *testing.T) {
 }
 
 func TestUpdate_Forbidden(t *testing.T) {
-	handler, testStore := setupTodoTestHandler(t)
+	handler, userRepo, todoRepo := setupTodoTestHandler(t)
 
-	user := createTestUser(t, testStore, models.RoleUser)
-	otherUser := createTestUser(t, testStore, models.RoleUser)
-	todo := createTestTodo(t, testStore, otherUser.ID)
+	user := createTestUser(t, userRepo, domain.RoleUser)
+	otherUser := createTestUser(t, userRepo, domain.RoleUser)
+	todo := createTestTodo(t, todoRepo, otherUser.ID)
 
 	claims := &auth.Claims{
 		UserID: user.ID,
 		Email:  user.Email,
-		Role:   models.RoleUser,
+		Role:   domain.RoleUser,
 	}
 
 	newTitle := "Hacked"
@@ -500,16 +497,16 @@ func TestUpdate_Forbidden(t *testing.T) {
 }
 
 func TestUpdate_AdminCanUpdateAny(t *testing.T) {
-	handler, testStore := setupTodoTestHandler(t)
+	handler, userRepo, todoRepo := setupTodoTestHandler(t)
 
-	user := createTestUser(t, testStore, models.RoleUser)
-	admin := createTestUser(t, testStore, models.RoleAdmin)
-	todo := createTestTodo(t, testStore, user.ID)
+	user := createTestUser(t, userRepo, domain.RoleUser)
+	admin := createTestUser(t, userRepo, domain.RoleAdmin)
+	todo := createTestTodo(t, todoRepo, user.ID)
 
 	claims := &auth.Claims{
 		UserID: admin.ID,
 		Email:  admin.Email,
-		Role:   models.RoleAdmin,
+		Role:   domain.RoleAdmin,
 	}
 
 	newTitle := "Admin Updated"
@@ -529,14 +526,14 @@ func TestUpdate_AdminCanUpdateAny(t *testing.T) {
 }
 
 func TestUpdate_NotFound(t *testing.T) {
-	handler, testStore := setupTodoTestHandler(t)
+	handler, userRepo, _ := setupTodoTestHandler(t)
 
-	user := createTestUser(t, testStore, models.RoleUser)
+	user := createTestUser(t, userRepo, domain.RoleUser)
 
 	claims := &auth.Claims{
 		UserID: user.ID,
 		Email:  user.Email,
-		Role:   models.RoleUser,
+		Role:   domain.RoleUser,
 	}
 
 	newTitle := "Whatever"
@@ -556,16 +553,16 @@ func TestUpdate_NotFound(t *testing.T) {
 }
 
 func TestDelete_Success_Admin(t *testing.T) {
-	handler, testStore := setupTodoTestHandler(t)
+	handler, userRepo, todoRepo := setupTodoTestHandler(t)
 
-	user := createTestUser(t, testStore, models.RoleUser)
-	admin := createTestUser(t, testStore, models.RoleAdmin)
-	todo := createTestTodo(t, testStore, user.ID)
+	user := createTestUser(t, userRepo, domain.RoleUser)
+	admin := createTestUser(t, userRepo, domain.RoleAdmin)
+	todo := createTestTodo(t, todoRepo, user.ID)
 
 	claims := &auth.Claims{
 		UserID: admin.ID,
 		Email:  admin.Email,
-		Role:   models.RoleAdmin,
+		Role:   domain.RoleAdmin,
 	}
 
 	req := httptest.NewRequest(http.MethodDelete, "/api/todos/"+todo.ID, nil)
@@ -578,23 +575,22 @@ func TestDelete_Success_Admin(t *testing.T) {
 		t.Errorf("Expected status %d, got %d", http.StatusNoContent, rec.Code)
 	}
 
-	// Verify todo is actually deleted
-	_, err := testStore.GetTodoByID(todo.ID)
+	_, err := todoRepo.GetByID(todo.ID)
 	if err != store.ErrTodoNotFound {
 		t.Errorf("Expected todo to be deleted, got error: %v", err)
 	}
 }
 
 func TestDelete_Forbidden_User(t *testing.T) {
-	handler, testStore := setupTodoTestHandler(t)
+	handler, userRepo, todoRepo := setupTodoTestHandler(t)
 
-	user := createTestUser(t, testStore, models.RoleUser)
-	todo := createTestTodo(t, testStore, user.ID)
+	user := createTestUser(t, userRepo, domain.RoleUser)
+	todo := createTestTodo(t, todoRepo, user.ID)
 
 	claims := &auth.Claims{
 		UserID: user.ID,
 		Email:  user.Email,
-		Role:   models.RoleUser,
+		Role:   domain.RoleUser,
 	}
 
 	req := httptest.NewRequest(http.MethodDelete, "/api/todos/"+todo.ID, nil)
@@ -607,22 +603,21 @@ func TestDelete_Forbidden_User(t *testing.T) {
 		t.Errorf("Expected status %d, got %d", http.StatusForbidden, rec.Code)
 	}
 
-	// Verify todo still exists
-	_, err := testStore.GetTodoByID(todo.ID)
+	_, err := todoRepo.GetByID(todo.ID)
 	if err != nil {
 		t.Errorf("Todo should still exist, got error: %v", err)
 	}
 }
 
 func TestDelete_NotFound(t *testing.T) {
-	handler, testStore := setupTodoTestHandler(t)
+	handler, userRepo, _ := setupTodoTestHandler(t)
 
-	admin := createTestUser(t, testStore, models.RoleAdmin)
+	admin := createTestUser(t, userRepo, domain.RoleAdmin)
 
 	claims := &auth.Claims{
 		UserID: admin.ID,
 		Email:  admin.Email,
-		Role:   models.RoleAdmin,
+		Role:   domain.RoleAdmin,
 	}
 
 	req := httptest.NewRequest(http.MethodDelete, "/api/todos/nonexistent", nil)
@@ -637,7 +632,7 @@ func TestDelete_NotFound(t *testing.T) {
 }
 
 func TestDelete_Unauthorized(t *testing.T) {
-	handler, _ := setupTodoTestHandler(t)
+	handler, _, _ := setupTodoTestHandler(t)
 
 	req := httptest.NewRequest(http.MethodDelete, "/api/todos/some-id", nil)
 	rec := httptest.NewRecorder()

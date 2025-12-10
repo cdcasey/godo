@@ -1,25 +1,26 @@
 package testutil
 
 import (
+	"database/sql"
 	"path/filepath"
 	"testing"
 
 	"godo/internal/store"
 )
 
-func SetupTestStore(t *testing.T) *store.Store {
+func SetupTestDB(t *testing.T) *sql.DB {
 	t.Helper()
 	dbPath := "file:" + filepath.Join(t.TempDir(), "test.db")
 
-	s, err := store.New(dbPath, "")
+	db, err := store.NewDB(dbPath, "")
 	if err != nil {
-		t.Fatalf("Failed to create test store: %v", err)
+		t.Fatalf("Failed to create test database: %v", err)
 	}
 
-	if err := s.RunMigrations("../../migrations"); err != nil {
+	if err := store.RunMigrations(db, "../../migrations"); err != nil {
 		t.Fatalf("Failed to run migrations: %v", err)
 	}
 
-	t.Cleanup(func() { s.Close() })
-	return s
+	t.Cleanup(func() { db.Close() })
+	return db
 }

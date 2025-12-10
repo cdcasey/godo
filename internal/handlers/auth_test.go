@@ -3,7 +3,8 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
-	"godo/internal/models"
+	"godo/internal/domain"
+	"godo/internal/service"
 	"godo/internal/store"
 	"godo/internal/testutil"
 	"log/slog"
@@ -11,23 +12,24 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
-	"time"
 )
 
-func setupTestHandler(t *testing.T) (*AuthHandler, *store.Store) {
+func setupAuthTestHandler(t *testing.T) (*AuthHandler, *store.UserRepo) {
 	t.Helper()
 
-	testStore := testutil.SetupTestStore(t)
+	db := testutil.SetupTestDB(t)
+	userRepo := store.NewUserRepo(db)
+	authService := service.NewAuthService(userRepo)
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 
-	handler := NewAuthHandler(testStore, logger, "test-jwt-secret")
+	handler := NewAuthHandler(authService, logger, "test-jwt-secret")
 
-	return handler, testStore
+	return handler, userRepo
 }
 
 func TestRegister_Success(t *testing.T) {
-	handler, _ := setupTestHandler(t)
+	handler, _ := setupAuthTestHandler(t)
 
 	reqBody := RegisterRequest{
 		Email:    "test@example.com",
@@ -58,8 +60,8 @@ func TestRegister_Success(t *testing.T) {
 		t.Errorf("Expected email %s, got %s", reqBody.Email, resp.User.Email)
 	}
 
-	if resp.User.Role != models.RoleUser {
-		t.Errorf("Expected role %s, got %s", models.RoleUser, resp.User.Role)
+	if resp.User.Role != domain.RoleUser {
+		t.Errorf("Expected role %s, got %s", domain.RoleUser, resp.User.Role)
 	}
 }
 
@@ -105,7 +107,7 @@ func TestRegister_Failure(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler, _ := setupTestHandler(t)
+			handler, _ := setupAuthTestHandler(t)
 
 			var body []byte
 			if str, ok := tt.body.(string); ok {
@@ -132,20 +134,19 @@ func TestRegister_Failure(t *testing.T) {
 }
 
 func TestLogin_Success(t *testing.T) {
-	handler, testStore := setupTestHandler(t)
+	handler, userRepo := setupAuthTestHandler(t)
 
 	// Create a user first
 	password := "password123"
-	hashedPassword, _ := models.HashPassword(password)
-	user := &models.User{
-		ID:           models.NewID(),
+	hashedPassword, _ := domain.HashPassword(password)
+	user := &domain.User{
+		ID:           domain.NewID(),
 		Email:        "test@example.com",
 		PasswordHash: hashedPassword,
-		Role:         models.RoleUser,
-		CreatedAt:    time.Now(),
+		Role:         domain.RoleUser,
 	}
 
-	if err := testStore.CreateUser(user); err != nil {
+	if err := userRepo.Create(user); err != nil {
 		t.Fatalf("Failed to create test user: %v", err)
 	}
 
@@ -228,19 +229,17 @@ func TestLogin_Failures(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler, testStore := setupTestHandler(t)
+			handler, userRepo := setupAuthTestHandler(t)
 
-			// Setup user if needed
 			if tt.setupUser {
-				hashedPassword, _ := models.HashPassword(tt.password)
-				user := &models.User{
-					ID:           models.NewID(),
+				hashedPassword, _ := domain.HashPassword(tt.password)
+				user := &domain.User{
+					ID:           domain.NewID(),
 					Email:        tt.email,
 					PasswordHash: hashedPassword,
-					Role:         models.RoleUser,
-					CreatedAt:    time.Now(),
+					Role:         domain.RoleUser,
 				}
-				if err := testStore.CreateUser(user); err != nil {
+				if err := userRepo.Create(user); err != nil {
 					t.Fatalf("Failed to create test user: %v", err)
 				}
 			}

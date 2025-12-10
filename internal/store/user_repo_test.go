@@ -1,46 +1,43 @@
 package store
 
 import (
-	"godo/internal/models"
+	"godo/internal/domain"
 	"testing"
-	"time"
-
-	"github.com/google/uuid"
 )
 
-func TestCreateUser_Success(t *testing.T) {
-	store := setupTestStore(t)
+func TestUserRepo_Create_Success(t *testing.T) {
+	db := setupTestDB(t)
+	repo := NewUserRepo(db)
 
-	user := &models.User{
-		ID:           uuid.New().String(),
+	user := &domain.User{
+		ID:           domain.NewID(),
 		Email:        "test@example.com",
 		PasswordHash: "hashed_password",
-		Role:         models.RoleUser,
-		CreatedAt:    time.Now(),
+		Role:         domain.RoleUser,
 	}
 
-	err := store.CreateUser(user)
+	err := repo.Create(user)
 	if err != nil {
 		t.Fatalf("Error creating user: %v", err)
 	}
 }
 
-func TestGetUserByEmail_Success(t *testing.T) {
-	store := setupTestStore(t)
+func TestUserRepo_GetByEmail_Success(t *testing.T) {
+	db := setupTestDB(t)
+	repo := NewUserRepo(db)
 
-	user := &models.User{
-		ID:           uuid.NewString(),
+	user := &domain.User{
+		ID:           domain.NewID(),
 		Email:        "test@example.com",
 		PasswordHash: "hashed_password",
-		Role:         models.RoleUser,
-		CreatedAt:    time.Now(),
+		Role:         domain.RoleUser,
 	}
 
-	if err := store.CreateUser(user); err != nil {
+	if err := repo.Create(user); err != nil {
 		t.Fatalf("Failed to create user: %v", err)
 	}
 
-	retrieved, err := store.GetUserByEmail("test@example.com")
+	retrieved, err := repo.GetByEmail("test@example.com")
 	if err != nil {
 		t.Fatalf("Failed to get user by email: %v", err)
 	}
@@ -62,10 +59,11 @@ func TestGetUserByEmail_Success(t *testing.T) {
 	}
 }
 
-func TestGetUserByEmail_NotFound(t *testing.T) {
-	store := setupTestStore(t)
+func TestUserRepo_GetByEmail_NotFound(t *testing.T) {
+	db := setupTestDB(t)
+	repo := NewUserRepo(db)
 
-	user, err := store.GetUserByEmail("nonexistent@example.com")
+	user, err := repo.GetByEmail("nonexistent@example.com")
 
 	if err != ErrUserNotFound {
 		t.Errorf("Expected ErrUserNotFound, got %v", err)
@@ -76,25 +74,22 @@ func TestGetUserByEmail_NotFound(t *testing.T) {
 	}
 }
 
-func TestGetUserByID_Success(t *testing.T) {
-	store := setupTestStore(t)
+func TestUserRepo_GetByID_Success(t *testing.T) {
+	db := setupTestDB(t)
+	repo := NewUserRepo(db)
 
-	// Create a user first
-	user := &models.User{
-		ID:           uuid.NewString(),
+	user := &domain.User{
+		ID:           domain.NewID(),
 		Email:        "test@example.com",
 		PasswordHash: "hashed_password",
-		Role:         models.RoleUser,
-		CreatedAt:    time.Now(),
+		Role:         domain.RoleUser,
 	}
 
-	err := store.CreateUser(user)
-	if err != nil {
+	if err := repo.Create(user); err != nil {
 		t.Fatalf("Failed to create user: %v", err)
 	}
 
-	// Retrieve the user by ID
-	retrieved, err := store.GetUserByID(user.ID)
+	retrieved, err := repo.GetByID(user.ID)
 	if err != nil {
 		t.Fatalf("Failed to get user by ID: %v", err)
 	}
@@ -116,10 +111,11 @@ func TestGetUserByID_Success(t *testing.T) {
 	}
 }
 
-func TestGetUserByID_NotFound(t *testing.T) {
-	store := setupTestStore(t)
+func TestUserRepo_GetByID_NotFound(t *testing.T) {
+	db := setupTestDB(t)
+	repo := NewUserRepo(db)
 
-	user, err := store.GetUserByID(uuid.NewString())
+	user, err := repo.GetByID(domain.NewID())
 
 	if err != ErrUserNotFound {
 		t.Errorf("Expected ErrUserNotFound, got %v", err)
