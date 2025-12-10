@@ -4,6 +4,7 @@ import (
 	"godo/internal/auth"
 	"godo/internal/config"
 	"godo/internal/handlers"
+	"godo/internal/service"
 	"godo/internal/store"
 	"log"
 	"log/slog"
@@ -23,21 +24,30 @@ func main() {
 	logger := setupLogger(cfg.LogLevel, cfg.LogFormat)
 	logger.Info("Starting todo API server")
 
-	db, err := store.New(cfg.DatabaseURL, cfg.DatabaseAuthToken)
+	db, err := store.NewDB(cfg.DatabaseURL, cfg.DatabaseAuthToken)
 	if err != nil {
 		logger.Error("Failed to initialize database", "error", err)
 		os.Exit(1)
 	}
 	defer db.Close()
 
-	if err := db.RunMigrations("./migrations"); err != nil {
+	if err := store.RunMigrations(db, "./migrations"); err != nil {
 		logger.Error("Failed to run migrations", "error", err)
 		os.Exit(1)
 	}
 	logger.Info("Database migrations completed")
 
-	authHandler := handlers.NewAuthHandler(db, logger, cfg.JWTSecret)
-	todoHandler := handlers.NewTodoHandler(db, logger)
+	// Repositories
+	userRepo := store.NewUserRepo(db)
+	todoRepo := store.NewTodoRepo(db)
+
+	// Services
+	authService := service.NewAuthService(userRepo)
+	todoService := service.NewTodoService(todoRepo)
+
+	// Handlers
+	authHandler := handlers.NewAuthHandler(authService, logger, cfg.JWTSecret)
+	todoHandler := handlers.NewTodoHandler(todoService, logger)
 
 	r := chi.NewRouter()
 
