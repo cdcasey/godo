@@ -102,8 +102,23 @@ func (r *UserRepo) Update(user *domain.User) error {
 }
 
 func (r *UserRepo) Delete(id string) error {
-	//TODO implement me
-	panic("implement me")
+	query := `DELETE FROM users WHERE id = ?`
+
+	result, err := r.db.Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete user: %w", err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rows == 0 {
+		return ErrUserNotFound
+	}
+
+	return nil
 }
 
 func (r *UserRepo) CountByRole(role string) (int, error) {
