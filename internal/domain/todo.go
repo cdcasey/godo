@@ -17,7 +17,7 @@ type Todo struct {
 func NewTodo(userID, title, description string) *Todo {
 	now := time.Now()
 	return &Todo{
-		ID:          NewId(),
+		ID:          NewID(),
 		UserID:      userID,
 		Title:       title,
 		Description: description,

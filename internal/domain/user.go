@@ -20,7 +20,7 @@ const (
 	RoleAdmin = "admin"
 )
 
-func NewId() string {
+func NewID() string {
 	return uuid.NewString()
 }
 
