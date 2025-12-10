@@ -39,7 +39,7 @@ func (s *AuthService) Register(email, password string) (*domain.User, error) {
 }
 
 func (s *AuthService) Authenticate(email, password string) (*domain.User, error) {
-	user, err := s.repo.GetByEmail(&email)
+	user, err := s.repo.GetByEmail(email)
 	if err != nil {
 		return nil, ErrInvalidCredentials
 	}
