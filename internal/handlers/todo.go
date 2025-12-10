@@ -4,24 +4,24 @@ import (
 	"encoding/json"
 	"errors"
 	"godo/internal/auth"
-	"godo/internal/models"
+	"godo/internal/domain"
+	"godo/internal/service"
 	"godo/internal/store"
 	"log/slog"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 )
 
 type TodoHandler struct {
-	store  store.TodoStore
-	logger *slog.Logger
+	todoService *service.TodoService
+	logger      *slog.Logger
 }
 
-func NewTodoHandler(store store.TodoStore, logger *slog.Logger) *TodoHandler {
+func NewTodoHandler(todoService *service.TodoService, logger *slog.Logger) *TodoHandler {
 	return &TodoHandler{
-		store:  store,
-		logger: logger,
+		todoService: todoService,
+		logger:      logger,
 	}
 }
 
@@ -30,7 +30,6 @@ type CreateTodoRequest struct {
 	Description string `json:"description"`
 }
 
-// Note: UpdateTodoRequest uses pointers to distinguish between "not provided" and "set to empty/false".
 type UpdateTodoRequest struct {
 	Title       *string `json:"title,omitempty"`
 	Description *string `json:"description,omitempty"`
@@ -38,14 +37,13 @@ type UpdateTodoRequest struct {
 }
 
 type TodoResponse struct {
-	Todo models.Todo `json:"todo"`
+	Todo domain.Todo `json:"todo"`
 }
 
 type TodosResponse struct {
-	Todos []*models.Todo `json:"todos"`
+	Todos []*domain.Todo `json:"todos"`
 }
 
-// Handler for creating a new todo
 func (h *TodoHandler) Create(w http.ResponseWriter, r *http.Request) {
 	claims, ok := auth.GetClaims(r.Context())
 	if !ok {
@@ -65,9 +63,8 @@ func (h *TodoHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	todo := models.NewTodo(claims.UserID, req.Title, req.Description)
-
-	if err := h.store.CreateTodo(todo); err != nil {
+	todo, err := h.todoService.Create(claims.UserID, req.Title, req.Description)
+	if err != nil {
 		h.logger.Error("Failed to create todo", "error", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -78,7 +75,6 @@ func (h *TodoHandler) Create(w http.ResponseWriter, r *http.Request) {
 	writeJsonResponse(w, http.StatusCreated, TodoResponse{Todo: *todo}, h.logger)
 }
 
-// Handler for listing all todos
 func (h *TodoHandler) List(w http.ResponseWriter, r *http.Request) {
 	claims, ok := auth.GetClaims(r.Context())
 	if !ok {
@@ -86,15 +82,7 @@ func (h *TodoHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	todos := make([]*models.Todo, 0)
-	var err error
-
-	if claims.Role == models.RoleAdmin {
-		todos, err = h.store.GetAllTodos()
-	} else {
-		todos, err = h.store.GetTodosByUserID(claims.UserID)
-	}
-
+	todos, err := h.todoService.List(claims.UserID, claims.Role)
 	if err != nil {
 		h.logger.Error("Failed to get todos", "error", err, "user_id", claims.UserID)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -106,7 +94,6 @@ func (h *TodoHandler) List(w http.ResponseWriter, r *http.Request) {
 	writeJsonResponse(w, http.StatusOK, TodosResponse{Todos: todos}, h.logger)
 }
 
-// Handler for getting a single todo
 func (h *TodoHandler) GetById(w http.ResponseWriter, r *http.Request) {
 	claims, ok := auth.GetClaims(r.Context())
 	if !ok {
@@ -120,11 +107,14 @@ func (h *TodoHandler) GetById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	todo, err := h.store.GetTodoByID(todoID)
+	todo, err := h.todoService.GetByID(todoID, claims.UserID, claims.Role)
 	if err != nil {
-		// if err == store.ErrTodoNotFound {
 		if errors.Is(err, store.ErrTodoNotFound) {
 			http.Error(w, "Todo not found", http.StatusNotFound)
+			return
+		}
+		if errors.Is(err, service.ErrForbidden) {
+			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
 		h.logger.Error("Failed to get todo", "error", err, "todo_id", todoID)
@@ -132,16 +122,9 @@ func (h *TodoHandler) GetById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Users can only view their own todos, admins can view any
-	if claims.Role != models.RoleAdmin && todo.UserID != claims.UserID {
-		http.Error(w, "Forbidden", http.StatusForbidden)
-		return
-	}
-
 	writeJsonResponse(w, http.StatusOK, TodoResponse{Todo: *todo}, h.logger)
 }
 
-// Handler to update a todo
 func (h *TodoHandler) Update(w http.ResponseWriter, r *http.Request) {
 	claims, ok := auth.GetClaims(r.Context())
 	if !ok {
@@ -155,26 +138,6 @@ func (h *TodoHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Claude's feedback on abstracting this logic out. Interesting:
-	// My honest take: This is borderline over-engineering for two call sites. But if you expect more handlers to need
-	// this pattern, go for it.
-	todo, err := h.store.GetTodoByID(todoID)
-	if err != nil {
-		if errors.Is(err, store.ErrTodoNotFound) {
-			http.Error(w, "Todo not found", http.StatusNotFound)
-			return
-		}
-		h.logger.Error("Failed to get todo", "error", err, "todo_id", todoID)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	// Users can only update their own todos
-	if claims.Role != models.RoleAdmin && todo.UserID != claims.UserID {
-		http.Error(w, "Forbidden", http.StatusForbidden)
-		return
-	}
-
 	var req UpdateTodoRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.logger.Warn("Invalid request body", "error", err)
@@ -182,18 +145,16 @@ func (h *TodoHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Title != nil {
-		todo.Title = *req.Title
-	}
-	if req.Description != nil {
-		todo.Description = *req.Description
-	}
-	if req.Completed != nil {
-		todo.Completed = *req.Completed
-	}
-	todo.UpdatedAt = time.Now()
-
-	if err := h.store.UpdateTodo(todo); err != nil {
+	todo, err := h.todoService.Update(todoID, claims.UserID, claims.Role, req.Title, req.Description, req.Completed)
+	if err != nil {
+		if errors.Is(err, store.ErrTodoNotFound) {
+			http.Error(w, "Todo not found", http.StatusNotFound)
+			return
+		}
+		if errors.Is(err, service.ErrForbidden) {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
 		h.logger.Error("Failed to update todo", "error", err, "todo_id", todoID)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -204,17 +165,10 @@ func (h *TodoHandler) Update(w http.ResponseWriter, r *http.Request) {
 	writeJsonResponse(w, http.StatusOK, TodoResponse{Todo: *todo}, h.logger)
 }
 
-// Handler to delete a todo
 func (h *TodoHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	claims, ok := auth.GetClaims(r.Context())
 	if !ok {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	// Admin only
-	if claims.Role != models.RoleAdmin {
-		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
 
@@ -224,9 +178,14 @@ func (h *TodoHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.store.DeleteTodo(todoID); err != nil {
+	err := h.todoService.Delete(todoID, claims.UserID, claims.Role)
+	if err != nil {
 		if errors.Is(err, store.ErrTodoNotFound) {
 			http.Error(w, "Todo not found", http.StatusNotFound)
+			return
+		}
+		if errors.Is(err, service.ErrForbidden) {
+			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
 		h.logger.Error("Failed to delete todo", "error", err, "todo_id", todoID)
@@ -234,7 +193,7 @@ func (h *TodoHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.logger.Info("Todo deleted", "todo_id", todoID, "admin_id", claims.UserID)
+	h.logger.Info("Todo deleted", "todo_id", todoID, "user_id", claims.UserID)
 
 	w.WriteHeader(http.StatusNoContent)
 }
