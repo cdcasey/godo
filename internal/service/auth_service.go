@@ -25,7 +25,7 @@ func (s *AuthService) Register(email, password string) (*domain.User, error) {
 	}
 
 	user := &domain.User{
-		ID:           domain.NewId(),
+		ID:           domain.NewID(),
 		Email:        email,
 		PasswordHash: hashedPassword,
 		Role:         domain.RoleUser,
