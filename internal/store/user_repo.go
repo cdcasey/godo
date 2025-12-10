@@ -82,8 +82,23 @@ func (r *UserRepo) GetAll() ([]*domain.User, error) {
 }
 
 func (r *UserRepo) Update(user *domain.User) error {
-	//TODO implement me
-	panic("implement me")
+	query := `UPDATE users SET email = ?, password_hash = ?, role = ? WHERE id = ?`
+
+	result, err := r.db.Exec(query, user.Email, user.PasswordHash, user.Role, user.ID)
+	if err != nil {
+		return fmt.Errorf("failed to update user: %w", err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rows == 0 {
+		return ErrUserNotFound
+	}
+
+	return nil
 }
 
 func (r *UserRepo) Delete(id string) error {
