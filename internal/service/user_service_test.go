@@ -18,7 +18,7 @@ func setupTestUserService(t *testing.T) (*UserService, *store.UserRepo) {
 }
 
 // GetByID: user can get self, admin can get anyone, user can't get others
-func TestUserServiceGetById_UserGetsSelf_Success(t *testing.T) {
+func TestUserServiceGetByID_UserGetsSelf_Success(t *testing.T) {
 	userService, userRepo := setupTestUserService(t)
 
 	user := &domain.User{
@@ -46,7 +46,7 @@ func TestUserServiceGetById_UserGetsSelf_Success(t *testing.T) {
 	}
 }
 
-func TestUserServiceGetById_UserGetsOther_Failure(t *testing.T) {
+func TestUserServiceGetByID_UserGetsOther_Failure(t *testing.T) {
 	userService, userRepo := setupTestUserService(t)
 
 	requestingUserID := domain.NewID()
@@ -73,7 +73,7 @@ func TestUserServiceGetById_UserGetsOther_Failure(t *testing.T) {
 	}
 }
 
-func TestUserServiceGetById_AdminGetsAny(t *testing.T) {
+func TestUserServiceGetByID_AdminGetsAny(t *testing.T) {
 	userService, userRepo := setupTestUserService(t)
 
 	requestingUserID := domain.NewID()
@@ -100,7 +100,7 @@ func TestUserServiceGetById_AdminGetsAny(t *testing.T) {
 	}
 }
 
-func TestUserServiceGetById_NotFound(t *testing.T) {
+func TestUserServiceGetByID_NotFound(t *testing.T) {
 	userService, _ := setupTestUserService(t)
 
 	requestingUserID := domain.NewID()
