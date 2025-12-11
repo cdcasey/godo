@@ -57,8 +57,6 @@ Existing:
 - POST /api/register, /api/login
 - GET/POST /api/todos, GET/PATCH/DELETE /api/todos/:id
 - GET /api/health
-
-Missing:
 - GET /api/users (admin only)
 - GET /api/users/:id (admin or self)
 - PATCH /api/users/:id (admin or self)
@@ -66,4 +64,4 @@ Missing:
 
 ## Testing approach
 
-Use TDD for service layer code: write failing tests first, then implement. For repositories and handlers, write tests immediately after implementation.
+Use TDD as much as possible: write failing tests first, then implement. When TDD does not make sense, write tests immediately after implementation of a function.
