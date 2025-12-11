@@ -77,8 +77,35 @@ func (r *UserRepo) GetByID(id string) (*domain.User, error) {
 }
 
 func (r *UserRepo) GetAll() ([]*domain.User, error) {
-	//TODO implement me
-	panic("implement me")
+	query := `SELECT id, email, role, created_at
+		FROM users ORDER BY created_at DESC`
+
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query users: %w", err)
+	}
+	defer rows.Close()
+
+	users := make([]*domain.User, 0)
+	for rows.Next() {
+		var user domain.User
+		err := rows.Scan(
+			&user.ID,
+			&user.Email,
+			&user.Role,
+			&user.CreatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan users: %w", err)
+		}
+		users = append(users, &user)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating users: %w", err)
+	}
+
+	return users, nil
 }
 
 func (r *UserRepo) Update(user *domain.User) error {
