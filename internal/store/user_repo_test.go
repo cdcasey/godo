@@ -212,3 +212,44 @@ func TestUserRepo_Delete_NotFound(t *testing.T) {
 		t.Errorf("expected ErrUserNotFound, got %v", err)
 	}
 }
+
+func TestUserRepo_GetAll_Success(t *testing.T) {
+	db := setupTestDB(t)
+	userRepo := NewUserRepo(db)
+
+	user1 := &domain.User{
+		ID:           domain.NewID(),
+		Email:        "user1@example.com",
+		PasswordHash: "hash",
+		Role:         domain.RoleUser,
+	}
+	user2 := &domain.User{
+		ID:           domain.NewID(),
+		Email:        "user2@example.com",
+		PasswordHash: "hash",
+		Role:         domain.RoleUser,
+	}
+	userRepo.Create(user1)
+	userRepo.Create(user2)
+
+	users, err := userRepo.GetAll()
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if len(users) != 2 {
+		t.Errorf("expected 2 users, got %d", len(users))
+	}
+}
+
+func TestUserRepo_GetAll_Empty(t *testing.T) {
+	db := setupTestDB(t)
+	userRepo := NewUserRepo(db)
+	users, err := userRepo.GetAll()
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(users) != 0 {
+		t.Errorf("expected 0 users, got %d", len(users))
+	}
+}
