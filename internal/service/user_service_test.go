@@ -255,8 +255,6 @@ func TestUserServiceUpdate_Admin_Success(t *testing.T) {
 	}
 }
 
-// func TestUserServiceUpdate_AdminRole_Success(t *testing.T) {}
-
 func TestUserServiceUpdate_AdminDemote_Success(t *testing.T) {
 	userService, userRepo := setupTestUserService(t)
 
