@@ -272,7 +272,7 @@ func TestList_Unauthorized(t *testing.T) {
 	}
 }
 
-func TestGetById_Success(t *testing.T) {
+func TestGetByID_Success(t *testing.T) {
 	handler, userRepo, todoRepo := setupTodoTestHandler(t)
 
 	user := createTestUser(t, userRepo, domain.RoleUser)
@@ -288,7 +288,7 @@ func TestGetById_Success(t *testing.T) {
 	req = requestWithClaimsAndID(req, claims, "id", todo.ID)
 	rec := httptest.NewRecorder()
 
-	handler.GetById(rec, req)
+	handler.GetByID(rec, req)
 
 	if rec.Code != http.StatusOK {
 		t.Errorf("Expected status %d, got %d", http.StatusOK, rec.Code)
@@ -304,7 +304,7 @@ func TestGetById_Success(t *testing.T) {
 	}
 }
 
-func TestGetById_AdminCanViewAny(t *testing.T) {
+func TestGetByID_AdminCanViewAny(t *testing.T) {
 	handler, userRepo, todoRepo := setupTodoTestHandler(t)
 
 	user := createTestUser(t, userRepo, domain.RoleUser)
@@ -321,14 +321,14 @@ func TestGetById_AdminCanViewAny(t *testing.T) {
 	req = requestWithClaimsAndID(req, claims, "id", todo.ID)
 	rec := httptest.NewRecorder()
 
-	handler.GetById(rec, req)
+	handler.GetByID(rec, req)
 
 	if rec.Code != http.StatusOK {
 		t.Errorf("Expected status %d, got %d", http.StatusOK, rec.Code)
 	}
 }
 
-func TestGetById_Forbidden(t *testing.T) {
+func TestGetByID_Forbidden(t *testing.T) {
 	handler, userRepo, todoRepo := setupTodoTestHandler(t)
 
 	user := createTestUser(t, userRepo, domain.RoleUser)
@@ -345,14 +345,14 @@ func TestGetById_Forbidden(t *testing.T) {
 	req = requestWithClaimsAndID(req, claims, "id", todo.ID)
 	rec := httptest.NewRecorder()
 
-	handler.GetById(rec, req)
+	handler.GetByID(rec, req)
 
 	if rec.Code != http.StatusForbidden {
 		t.Errorf("Expected status %d, got %d", http.StatusForbidden, rec.Code)
 	}
 }
 
-func TestGetById_NotFound(t *testing.T) {
+func TestGetByID_NotFound(t *testing.T) {
 	handler, userRepo, _ := setupTodoTestHandler(t)
 
 	user := createTestUser(t, userRepo, domain.RoleUser)
@@ -367,7 +367,7 @@ func TestGetById_NotFound(t *testing.T) {
 	req = requestWithClaimsAndID(req, claims, "id", "nonexistent-id")
 	rec := httptest.NewRecorder()
 
-	handler.GetById(rec, req)
+	handler.GetByID(rec, req)
 
 	if rec.Code != http.StatusNotFound {
 		t.Errorf("Expected status %d, got %d", http.StatusNotFound, rec.Code)

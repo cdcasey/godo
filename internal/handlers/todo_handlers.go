@@ -94,7 +94,7 @@ func (h *TodoHandler) List(w http.ResponseWriter, r *http.Request) {
 	writeJsonResponse(w, http.StatusOK, TodosResponse{Todos: todos}, h.logger)
 }
 
-func (h *TodoHandler) GetById(w http.ResponseWriter, r *http.Request) {
+func (h *TodoHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	claims, ok := auth.GetClaims(r.Context())
 	if !ok {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)

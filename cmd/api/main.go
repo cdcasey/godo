@@ -68,7 +68,7 @@ func main() {
 		r.Use(auth.Middleware(cfg.JWTSecret))
 		r.Post("/", todoHandler.Create)
 		r.Get("/", todoHandler.List)
-		r.Get("/{id}", todoHandler.GetById)
+		r.Get("/{id}", todoHandler.GetByID)
 		r.Patch("/{id}", todoHandler.Update)
 		r.Delete("/{id}", todoHandler.Delete)
 	})
