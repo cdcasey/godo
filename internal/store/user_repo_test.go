@@ -179,3 +179,36 @@ func TestUserRepo_Update_NotFound(t *testing.T) {
 		t.Errorf("expected ErrUserNotFound, got %v", err)
 	}
 }
+
+func TestUserRepo_Delete_Success(t *testing.T) {
+	db := setupTestDB(t)
+	userRepo := NewUserRepo(db)
+
+	user := &domain.User{
+		ID:           domain.NewID(),
+		Email:        "test@example.com",
+		PasswordHash: "hash",
+		Role:         domain.RoleUser,
+	}
+	userRepo.Create(user)
+
+	err := userRepo.Delete(user.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	_, err = userRepo.GetByID(user.ID)
+	if err != ErrUserNotFound {
+		t.Errorf("expected ErrUserNotFound after delete, got %v", err)
+	}
+}
+
+func TestUserRepo_Delete_NotFound(t *testing.T) {
+	db := setupTestDB(t)
+	userRepo := NewUserRepo(db)
+
+	err := userRepo.Delete("nonexistent-id")
+	if err != ErrUserNotFound {
+		t.Errorf("expected ErrUserNotFound, got %v", err)
+	}
+}
