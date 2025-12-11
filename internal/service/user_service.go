@@ -12,7 +12,7 @@ func NewUserService(repo domain.UserRepository) *UserService {
 	return &UserService{repo: repo}
 }
 
-func (s *UserService) GetById(userID, requestingUserID, requestingUserRole string) (*domain.User, error) {
+func (s *UserService) GetByID(userID, requestingUserID, requestingUserRole string) (*domain.User, error) {
 	user, err := s.repo.GetByID(userID)
 	if err != nil {
 		return nil, err
