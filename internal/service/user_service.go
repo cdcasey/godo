@@ -22,3 +22,11 @@ func (s *UserService) GetById(userID, requestingUserID, requestingUserRole strin
 
 	return user, nil
 }
+
+func (s *UserService) List(requestingUserRole string) ([]*domain.User, error) {
+	if requestingUserRole == domain.RoleAdmin {
+		return s.repo.GetAll()
+	}
+
+	return nil, ErrForbidden
+}
