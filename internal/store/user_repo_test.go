@@ -65,7 +65,7 @@ func TestUserRepo_GetByEmail_NotFound(t *testing.T) {
 
 	user, err := repo.GetByEmail("nonexistent@example.com")
 
-	if err != ErrUserNotFound {
+	if err != domain.ErrUserNotFound {
 		t.Errorf("Expected ErrUserNotFound, got %v", err)
 	}
 
@@ -117,7 +117,7 @@ func TestUserRepo_GetByID_NotFound(t *testing.T) {
 
 	user, err := repo.GetByID(domain.NewID())
 
-	if err != ErrUserNotFound {
+	if err != domain.ErrUserNotFound {
 		t.Errorf("Expected ErrUserNotFound, got %v", err)
 	}
 
@@ -175,7 +175,7 @@ func TestUserRepo_Update_NotFound(t *testing.T) {
 	user := &domain.User{ID: "nonexistent-id"}
 
 	err := userRepo.Update(user)
-	if err != ErrUserNotFound {
+	if err != domain.ErrUserNotFound {
 		t.Errorf("expected ErrUserNotFound, got %v", err)
 	}
 }
@@ -198,7 +198,7 @@ func TestUserRepo_Delete_Success(t *testing.T) {
 	}
 
 	_, err = userRepo.GetByID(user.ID)
-	if err != ErrUserNotFound {
+	if err != domain.ErrUserNotFound {
 		t.Errorf("expected ErrUserNotFound after delete, got %v", err)
 	}
 }
@@ -208,8 +208,8 @@ func TestUserRepo_Delete_NotFound(t *testing.T) {
 	userRepo := NewUserRepo(db)
 
 	err := userRepo.Delete("nonexistent-id")
-	if err != ErrUserNotFound {
-		t.Errorf("expected ErrUserNotFound, got %v", err)
+	if err != domain.ErrUserNotFound {
+		t.Errorf("expected ßErrUserNotFound, got %v", err)
 	}
 }
 

@@ -107,7 +107,7 @@ func TestUserServiceGetByID_NotFound(t *testing.T) {
 	requestingUserRole := domain.RoleUser
 
 	retrieved, err := userService.GetByID(domain.NewID(), requestingUserID, requestingUserRole)
-	if err != store.ErrUserNotFound {
+	if err != domain.ErrUserNotFound {
 		t.Fatalf("Expected ErrUserNotFound got: %v", err)
 	}
 

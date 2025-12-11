@@ -71,8 +71,8 @@ func TestTodoRepo_GetByID_NotFound(t *testing.T) {
 	todoRepo := NewTodoRepo(db)
 
 	_, err := todoRepo.GetByID("nonexistent-id")
-	if err != ErrTodoNotFound {
-		t.Errorf("expected ErrTodoNotFound, got %v", err)
+	if err != domain.ErrTodoNotFound {
+		t.Errorf("expected domain.ErrTodoNotFound, got %v", err)
 	}
 }
 
@@ -201,7 +201,7 @@ func TestTodoRepo_Update_NotFound(t *testing.T) {
 	todo := &domain.Todo{ID: "nonexistent-id"}
 
 	err := todoRepo.Update(todo)
-	if err != ErrTodoNotFound {
+	if err != domain.ErrTodoNotFound {
 		t.Errorf("expected ErrTodoNotFound, got %v", err)
 	}
 }
@@ -228,7 +228,7 @@ func TestTodoRepo_Delete_Success(t *testing.T) {
 	}
 
 	_, err = todoRepo.GetByID(todo.ID)
-	if err != ErrTodoNotFound {
+	if err != domain.ErrTodoNotFound {
 		t.Errorf("expected ErrTodoNotFound after delete, got %v", err)
 	}
 }
@@ -238,7 +238,7 @@ func TestTodoRepo_Delete_NotFound(t *testing.T) {
 	todoRepo := NewTodoRepo(db)
 
 	err := todoRepo.Delete("nonexistent-id")
-	if err != ErrTodoNotFound {
+	if err != domain.ErrTodoNotFound {
 		t.Errorf("expected ErrTodoNotFound, got %v", err)
 	}
 }

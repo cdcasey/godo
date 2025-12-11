@@ -2,7 +2,6 @@ package store
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,11 +9,6 @@ import (
 	"strings"
 
 	_ "github.com/tursodatabase/go-libsql"
-)
-
-var (
-	ErrUserNotFound = errors.New("user not found")
-	ErrTodoNotFound = errors.New("todo not found")
 )
 
 func NewDB(databaseURL string, authToken string) (*sql.DB, error) {

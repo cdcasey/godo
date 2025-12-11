@@ -545,7 +545,7 @@ func TestUserDelete_Success_Admin(t *testing.T) {
 
 	// Verify user is actually deleted
 	_, err := userRepo.GetByID(user.ID)
-	if err != store.ErrUserNotFound {
+	if err != domain.ErrUserNotFound {
 		t.Errorf("Expected user to be deleted, got error: %v", err)
 	}
 }

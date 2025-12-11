@@ -6,7 +6,6 @@ import (
 	"godo/internal/auth"
 	"godo/internal/domain"
 	"godo/internal/service"
-	"godo/internal/store"
 	"log/slog"
 	"net/http"
 
@@ -109,7 +108,7 @@ func (h *TodoHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	todo, err := h.todoService.GetByID(todoID, claims.UserID, claims.Role)
 	if err != nil {
-		if errors.Is(err, store.ErrTodoNotFound) {
+		if errors.Is(err, domain.ErrTodoNotFound) {
 			http.Error(w, "Todo not found", http.StatusNotFound)
 			return
 		}
@@ -147,7 +146,7 @@ func (h *TodoHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	todo, err := h.todoService.Update(todoID, claims.UserID, claims.Role, req.Title, req.Description, req.Completed)
 	if err != nil {
-		if errors.Is(err, store.ErrTodoNotFound) {
+		if errors.Is(err, domain.ErrTodoNotFound) {
 			http.Error(w, "Todo not found", http.StatusNotFound)
 			return
 		}
@@ -180,7 +179,7 @@ func (h *TodoHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	err := h.todoService.Delete(todoID, claims.UserID, claims.Role)
 	if err != nil {
-		if errors.Is(err, store.ErrTodoNotFound) {
+		if errors.Is(err, domain.ErrTodoNotFound) {
 			http.Error(w, "Todo not found", http.StatusNotFound)
 			return
 		}

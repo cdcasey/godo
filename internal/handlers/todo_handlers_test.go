@@ -576,7 +576,7 @@ func TestDelete_Success_Admin(t *testing.T) {
 	}
 
 	_, err := todoRepo.GetByID(todo.ID)
-	if err != store.ErrTodoNotFound {
+	if err != domain.ErrTodoNotFound {
 		t.Errorf("Expected todo to be deleted, got error: %v", err)
 	}
 }
