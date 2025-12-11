@@ -6,6 +6,7 @@ A Go todo API that I'm building to learn:
 - Go API development with Chi router
 - Hexagonal (ports & adapters) architecture
 - Templ + HTMX for server-rendered frontends
+- RPC implementation
 - GCP deployment
 
 The app itself isn't the point—the learning is.
@@ -44,6 +45,7 @@ The app itself isn't the point—the learning is.
 - [x] User CRUD endpoints (GET/PATCH/DELETE users, admin controls)
 - [ ] Hexagonal architecture refactor
 - [ ] Templ + HTMX frontend
+- [ ] RPC implementation
 
 ## Authorization Rules
 
