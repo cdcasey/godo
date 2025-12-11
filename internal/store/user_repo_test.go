@@ -253,3 +253,44 @@ func TestUserRepo_GetAll_Empty(t *testing.T) {
 		t.Errorf("expected 0 users, got %d", len(users))
 	}
 }
+
+func TestUserRepo_CountByRole_Empty(t *testing.T) {
+	db := setupTestDB(t)
+	userRepo := NewUserRepo(db)
+
+	count, err := userRepo.CountByRole(domain.RoleAdmin)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if count != 0 {
+		t.Fatalf("expected role count of 0, got %v", count)
+	}
+}
+
+func TestUserRepo_CountByRole_One(t *testing.T) {
+	db := setupTestDB(t)
+	userRepo := NewUserRepo(db)
+	user1 := &domain.User{
+		ID:           domain.NewID(),
+		Email:        "user1@example.com",
+		PasswordHash: "hash",
+		Role:         domain.RoleAdmin,
+	}
+	user2 := &domain.User{
+		ID:           domain.NewID(),
+		Email:        "user2@example.com",
+		PasswordHash: "hash",
+		Role:         domain.RoleUser,
+	}
+	userRepo.Create(user1)
+	userRepo.Create(user2)
+
+	count, err := userRepo.CountByRole(domain.RoleAdmin)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if count != 1 {
+		t.Errorf("expected 1 user, got %d", count)
+	}
+}
