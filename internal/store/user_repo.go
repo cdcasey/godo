@@ -42,7 +42,7 @@ func (r *UserRepo) GetByEmail(email string) (*domain.User, error) {
 	)
 
 	if err == sql.ErrNoRows {
-		return nil, ErrUserNotFound
+		return nil, domain.ErrUserNotFound
 	}
 
 	if err != nil {
@@ -66,7 +66,7 @@ func (r *UserRepo) GetByID(id string) (*domain.User, error) {
 	)
 
 	if err == sql.ErrNoRows {
-		return nil, ErrUserNotFound
+		return nil, domain.ErrUserNotFound
 	}
 
 	if err != nil {
@@ -122,7 +122,7 @@ func (r *UserRepo) Update(user *domain.User) error {
 	}
 
 	if rows == 0 {
-		return ErrUserNotFound
+		return domain.ErrUserNotFound
 	}
 
 	return nil
@@ -142,7 +142,7 @@ func (r *UserRepo) Delete(id string) error {
 	}
 
 	if rows == 0 {
-		return ErrUserNotFound
+		return domain.ErrUserNotFound
 	}
 
 	return nil

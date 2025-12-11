@@ -6,7 +6,6 @@ import (
 	"godo/internal/auth"
 	"godo/internal/domain"
 	"godo/internal/service"
-	"godo/internal/store"
 	"log/slog"
 	"net/http"
 
@@ -77,7 +76,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.userService.GetByID(userID, claims.UserID, claims.Role)
 	if err != nil {
-		if errors.Is(err, store.ErrUserNotFound) {
+		if errors.Is(err, domain.ErrUserNotFound) {
 			http.Error(w, "User not found", http.StatusNotFound)
 			return
 		}
@@ -115,7 +114,7 @@ func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.userService.Update(userID, claims.UserID, claims.Role, req.Email, req.Password, req.Role)
 	if err != nil {
-		if errors.Is(err, store.ErrUserNotFound) {
+		if errors.Is(err, domain.ErrUserNotFound) {
 			http.Error(w, "User not found", http.StatusNotFound)
 			return
 		}
@@ -152,7 +151,7 @@ func (h *UserHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	err := h.userService.Delete(userID, claims.UserID, claims.Role)
 	if err != nil {
-		if errors.Is(err, store.ErrUserNotFound) {
+		if errors.Is(err, domain.ErrUserNotFound) {
 			http.Error(w, "User not found", http.StatusNotFound)
 			return
 		}

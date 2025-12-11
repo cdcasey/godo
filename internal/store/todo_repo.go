@@ -42,7 +42,7 @@ func (r *TodoRepo) GetByID(id string) (*domain.Todo, error) {
 	)
 
 	if err == sql.ErrNoRows {
-		return nil, ErrTodoNotFound
+		return nil, domain.ErrTodoNotFound
 	}
 
 	if err != nil {
@@ -137,7 +137,7 @@ func (r *TodoRepo) Update(todo *domain.Todo) error {
 	}
 
 	if rows == 0 {
-		return ErrTodoNotFound
+		return domain.ErrTodoNotFound
 	}
 
 	return nil
@@ -157,7 +157,7 @@ func (r *TodoRepo) Delete(id string) error {
 	}
 
 	if rows == 0 {
-		return ErrTodoNotFound
+		return domain.ErrTodoNotFound
 	}
 
 	return nil
