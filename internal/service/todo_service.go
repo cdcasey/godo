@@ -1,12 +1,9 @@
 package service
 
 import (
-	"errors"
 	"godo/internal/domain"
 	"time"
 )
-
-var ErrForbidden = errors.New("forbidden")
 
 type TodoService struct {
 	repo domain.TodoRepository
