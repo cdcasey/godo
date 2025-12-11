@@ -125,3 +125,57 @@ func TestUserRepo_GetByID_NotFound(t *testing.T) {
 		t.Errorf("Expected nil user, got %v", user)
 	}
 }
+
+func TestUserRepo_Update_Success(t *testing.T) {
+	db := setupTestDB(t)
+	userRepo := NewUserRepo(db)
+	updatedEmail := "test2@example.com"
+	updatedPasswordHash := "hash2"
+	updatedRole := domain.RoleAdmin
+
+	user := &domain.User{
+		ID:           domain.NewID(),
+		Email:        "test@example.com",
+		PasswordHash: "hash",
+		Role:         domain.RoleUser,
+	}
+	userRepo.Create(user)
+
+	user.Email = updatedEmail
+	user.PasswordHash = updatedPasswordHash
+	user.Role = updatedRole
+
+	err := userRepo.Update(user)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	updated, err := userRepo.GetByID(user.ID)
+	if err != nil {
+		t.Fatalf("failed to retrieve updated user: %v", err)
+	}
+
+	if updated.Email != updatedEmail {
+		t.Errorf("expected email %q, got %q", updatedEmail, updated.Email)
+	}
+
+	if updated.PasswordHash != updatedPasswordHash {
+		t.Errorf("expected hash %q, got %q", updatedPasswordHash, updated.PasswordHash)
+	}
+
+	if updated.Role != updatedRole {
+		t.Errorf("expected role %q, got %q", updatedRole, updated.Role)
+	}
+}
+
+func TestUserRepo_Update_NotFound(t *testing.T) {
+	db := setupTestDB(t)
+	userRepo := NewUserRepo(db)
+
+	user := &domain.User{ID: "nonexistent-id"}
+
+	err := userRepo.Update(user)
+	if err != ErrUserNotFound {
+		t.Errorf("expected ErrUserNotFound, got %v", err)
+	}
+}
