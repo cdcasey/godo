@@ -75,3 +75,26 @@ func (s *UserService) Update(userID, requestingUserID, requestingUserRole string
 
 	return user, nil
 }
+
+func (s *UserService) Delete(userID, requestingUserID, requestingUserRole string) error {
+	user, err := s.repo.GetByID(userID)
+	if err != nil {
+		return err
+	}
+
+	if requestingUserRole != domain.RoleAdmin && user.ID != requestingUserID {
+		return ErrForbidden
+	}
+
+	if user.Role == domain.RoleAdmin {
+		count, err := s.repo.CountByRole(domain.RoleAdmin)
+		if err != nil {
+			return err
+		}
+		if count == 1 {
+			return ErrLastAdmin
+		}
+	}
+
+	return s.repo.Delete(userID)
+}
