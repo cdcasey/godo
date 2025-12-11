@@ -41,7 +41,7 @@ The app itself isn't the point—the learning is.
 
 ## What's Not Done
 
-- [ ] User CRUD endpoints (GET/PATCH/DELETE users, admin controls)
+- [x] User CRUD endpoints (GET/PATCH/DELETE users, admin controls)
 - [ ] Hexagonal architecture refactor
 - [ ] Templ + HTMX frontend
 
