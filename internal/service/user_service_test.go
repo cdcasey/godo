@@ -315,3 +315,82 @@ func TestUserServiceUpdate_AdminDemote_Failure(t *testing.T) {
 }
 
 // Delete: user can delete self, admin can delete anyone, can't delete last admin
+func TestUserServiceDelete_User_Success(t *testing.T) {
+	userService, userRepo := setupTestUserService(t)
+
+	user := &domain.User{
+		ID:           domain.NewID(),
+		Email:        "test@example.com",
+		PasswordHash: "hashed_password",
+		Role:         domain.RoleUser,
+	}
+
+	if err := userRepo.Create(user); err != nil {
+		t.Fatalf("Failed to create user: %v", err)
+	}
+
+	err := userService.Delete(user.ID, user.ID, user.Role)
+	if err != nil {
+		t.Fatalf("Failed to delete user: %v", err)
+	}
+}
+
+func TestUserServiceDelete_User_Failure(t *testing.T) {
+	userService, userRepo := setupTestUserService(t)
+
+	user := &domain.User{
+		ID:           domain.NewID(),
+		Email:        "test@example.com",
+		PasswordHash: "hashed_password",
+		Role:         domain.RoleUser,
+	}
+
+	if err := userRepo.Create(user); err != nil {
+		t.Fatalf("Failed to create user: %v", err)
+	}
+
+	err := userService.Delete(user.ID, domain.NewID(), user.Role)
+	if err != ErrForbidden {
+		t.Fatalf("Expected ErrForbidden, got: %v", err)
+	}
+}
+
+func TestUserServiceDelete_Admin_Success(t *testing.T) {
+	userService, userRepo := setupTestUserService(t)
+
+	user := &domain.User{
+		ID:           domain.NewID(),
+		Email:        "test@example.com",
+		PasswordHash: "hashed_password",
+		Role:         domain.RoleUser,
+	}
+
+	if err := userRepo.Create(user); err != nil {
+		t.Fatalf("Failed to create user: %v", err)
+	}
+
+	err := userService.Delete(user.ID, domain.NewID(), domain.RoleAdmin)
+	if err != nil {
+		t.Fatalf("Failed to delete user: %v", err)
+	}
+}
+
+func TestUserServiceDelete_Admin_Failure(t *testing.T) {
+	userService, userRepo := setupTestUserService(t)
+
+	user := &domain.User{
+		ID:           domain.NewID(),
+		Email:        "test@example.com",
+		PasswordHash: "hashed_password",
+		Role:         domain.RoleAdmin,
+	}
+
+	if err := userRepo.Create(user); err != nil {
+		t.Fatalf("Failed to create user: %v", err)
+	}
+
+	err := userService.Delete(user.ID, user.ID, user.Role)
+	if err != ErrLastAdmin {
+		t.Fatalf("Expected ErrLastAdmin, got: %v", err)
+	}
+}
