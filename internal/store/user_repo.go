@@ -149,6 +149,15 @@ func (r *UserRepo) Delete(id string) error {
 }
 
 func (r *UserRepo) CountByRole(role string) (int, error) {
-	//TODO implement me
-	panic("implement me")
+	query := `SELECT COUNT(*) FROM users WHERE role = ?`
+
+	var userCount int
+	err := r.db.QueryRow(query, role).Scan(
+		&userCount,
+	)
+	if err != nil {
+		return 0, fmt.Errorf("failed to scan users: %w", err)
+	}
+
+	return userCount, nil
 }
