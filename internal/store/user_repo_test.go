@@ -209,7 +209,7 @@ func TestUserRepo_Delete_NotFound(t *testing.T) {
 
 	err := userRepo.Delete("nonexistent-id")
 	if err != domain.ErrUserNotFound {
-		t.Errorf("expected ßErrUserNotFound, got %v", err)
+		t.Errorf("expected ErrUserNotFound, got %v", err)
 	}
 }
 
