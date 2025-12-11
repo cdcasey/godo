@@ -63,3 +63,7 @@ Missing:
 - GET /api/users/:id (admin or self)
 - PATCH /api/users/:id (admin or self)
 - DELETE /api/users/:id (admin only)
+
+## Testing approach
+
+Use TDD for service layer code: write failing tests first, then implement. For repositories and handlers, write tests immediately after implementation.
