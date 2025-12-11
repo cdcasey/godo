@@ -44,10 +44,12 @@ func main() {
 	// Services
 	authService := service.NewAuthService(userRepo)
 	todoService := service.NewTodoService(todoRepo)
+	userService := service.NewUserService(userRepo)
 
 	// Handlers
 	authHandler := handlers.NewAuthHandler(authService, logger, cfg.JWTSecret)
 	todoHandler := handlers.NewTodoHandler(todoService, logger)
+	userHandler := handlers.NewUserHandler(userService, logger)
 
 	r := chi.NewRouter()
 
@@ -69,6 +71,14 @@ func main() {
 		r.Get("/{id}", todoHandler.GetById)
 		r.Patch("/{id}", todoHandler.Update)
 		r.Delete("/{id}", todoHandler.Delete)
+	})
+
+	r.Route("/api/users", func(r chi.Router) {
+		r.Use(auth.Middleware(cfg.JWTSecret))
+		r.Get("/", userHandler.List)
+		r.Get("/{id}", userHandler.GetByID)
+		r.Patch("/{id}", userHandler.Update)
+		r.Delete("/{id}", userHandler.Delete)
 	})
 
 	addr := ":" + cfg.Port
