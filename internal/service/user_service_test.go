@@ -155,4 +155,163 @@ func TestUserServiceList_Failure(t *testing.T) {
 }
 
 // Update: user can update self (but not role), admin can update anyone, can't demote last admin
+func TestUserServiceUpdate_User_Success(t *testing.T) {
+	userService, userRepo := setupTestUserService(t)
+
+	user := &domain.User{
+		ID:           domain.NewID(),
+		Email:        "test@example.com",
+		PasswordHash: "hashed_password",
+		Role:         domain.RoleUser,
+	}
+
+	if err := userRepo.Create(user); err != nil {
+		t.Fatalf("Failed to create user: %v", err)
+	}
+
+	newEmail := "test2@example.com"
+
+	user, err := userService.Update(user.ID, user.ID, user.Role, &newEmail, nil, nil)
+	if err != nil {
+		t.Fatalf("Failed to update user: %v", err)
+	}
+
+	if user.Email != newEmail {
+		t.Fatalf("Expected email %s got %s", newEmail, user.Email)
+	}
+}
+
+func TestUserServiceUpdate_User_Failure(t *testing.T) {
+	userService, userRepo := setupTestUserService(t)
+
+	user := &domain.User{
+		ID:           domain.NewID(),
+		Email:        "test@example.com",
+		PasswordHash: "hashed_password",
+		Role:         domain.RoleUser,
+	}
+
+	if err := userRepo.Create(user); err != nil {
+		t.Fatalf("Failed to create user: %v", err)
+	}
+
+	newEmail := "test2@example.com"
+
+	user, err := userService.Update(user.ID, domain.NewID(), domain.RoleUser, &newEmail, nil, nil)
+	if err != ErrForbidden {
+		t.Fatalf("Expected ErrForbidden got: %v", err)
+	}
+
+	if user != nil {
+		t.Fatalf("Expected nil user, got: %v", user)
+	}
+}
+
+func TestUserServiceUpdate_UserRole_Failure(t *testing.T) {
+	userService, userRepo := setupTestUserService(t)
+
+	user := &domain.User{
+		ID:           domain.NewID(),
+		Email:        "test@example.com",
+		PasswordHash: "hashed_password",
+		Role:         domain.RoleUser,
+	}
+
+	if err := userRepo.Create(user); err != nil {
+		t.Fatalf("Failed to create user: %v", err)
+	}
+
+	newRole := domain.RoleAdmin
+
+	user, err := userService.Update(user.ID, user.ID, domain.RoleUser, nil, nil, &newRole)
+	if err != ErrForbidden {
+		t.Fatalf("Expected ErrForbidden got: %v", err)
+	}
+}
+
+func TestUserServiceUpdate_Admin_Success(t *testing.T) {
+	userService, userRepo := setupTestUserService(t)
+
+	user := &domain.User{
+		ID:           domain.NewID(),
+		Email:        "test@example.com",
+		PasswordHash: "hashed_password",
+		Role:         domain.RoleUser,
+	}
+
+	if err := userRepo.Create(user); err != nil {
+		t.Fatalf("Failed to create user: %v", err)
+	}
+
+	newRole := domain.RoleAdmin
+
+	updatedUser, err := userService.Update(user.ID, domain.NewID(), domain.RoleAdmin, nil, nil, &newRole)
+	if err != nil {
+		t.Fatalf("Expected to update user got: %v", err)
+	}
+
+	if updatedUser.Role != newRole {
+		t.Fatalf("Expected role %s got: %s", newRole, updatedUser.Role)
+	}
+}
+
+// func TestUserServiceUpdate_AdminRole_Success(t *testing.T) {}
+
+func TestUserServiceUpdate_AdminDemote_Success(t *testing.T) {
+	userService, userRepo := setupTestUserService(t)
+
+	user1 := &domain.User{
+		ID:           domain.NewID(),
+		Email:        "test@example.com",
+		PasswordHash: "hashed_password",
+		Role:         domain.RoleAdmin,
+	}
+	user2 := &domain.User{
+		ID:           domain.NewID(),
+		Email:        "test2@example.com",
+		PasswordHash: "hashed_password",
+		Role:         domain.RoleAdmin,
+	}
+
+	if err := userRepo.Create(user1); err != nil {
+		t.Fatalf("Failed to create user: %v", err)
+	}
+	if err := userRepo.Create(user2); err != nil {
+		t.Fatalf("Failed to create user: %v", err)
+	}
+
+	newRole := domain.RoleUser
+
+	updatedUser, err := userService.Update(user1.ID, domain.NewID(), domain.RoleAdmin, nil, nil, &newRole)
+	if err != nil {
+		t.Fatalf("Expected to update user got: %v", err)
+	}
+
+	if updatedUser.Role != newRole {
+		t.Fatalf("Expected role %s got: %s", newRole, updatedUser.Role)
+	}
+}
+
+func TestUserServiceUpdate_AdminDemote_Failure(t *testing.T) {
+	userService, userRepo := setupTestUserService(t)
+
+	user := &domain.User{
+		ID:           domain.NewID(),
+		Email:        "test@example.com",
+		PasswordHash: "hashed_password",
+		Role:         domain.RoleAdmin,
+	}
+
+	if err := userRepo.Create(user); err != nil {
+		t.Fatalf("Failed to create user: %v", err)
+	}
+
+	newRole := domain.RoleUser
+
+	user, err := userService.Update(user.ID, user.ID, user.Role, nil, nil, &newRole)
+	if err != ErrLastAdmin {
+		t.Fatalf("Expected ErrLastAdmin got: %v", err)
+	}
+}
+
 // Delete: user can delete self, admin can delete anyone, can't delete last admin
