@@ -12,10 +12,14 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 
+# Install templ
+RUN go install github.com/a-h/templ/cmd/templ@latest
+
 # COPY source code
 COPY . .
 
-# BUILD with CGO enabled
+# Generate templ files and build with CGO enabled
+RUN templ generate
 RUN CGO_ENABLED=1 go build -o godo ./cmd/api
 
 # Runtime stage
@@ -26,9 +30,9 @@ FROM debian:bookworm-slim
 # RUN apk add --no-cache ca-certificates \
 #     && adduser -D -g '' appuser
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/* \
-    && useradd --create-home --shell /bin/false appuser
+	ca-certificates \
+	&& rm -rf /var/lib/apt/lists/* \
+	&& useradd --create-home --shell /bin/false appuser
 
 WORKDIR /app
 

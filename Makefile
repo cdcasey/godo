@@ -83,7 +83,6 @@ gcp-deploy: ## Deploy to Google Cloud Run (app runs migrations on startup)
 		--region us-central1 \
 		--allow-unauthenticated \
 		--set-env-vars "DATABASE_URL=libsql://godo-cdcasey.aws-us-east-2.turso.io,DATABASE_AUTH_TOKEN=$(DATABASE_AUTH_TOKEN)" \
-		# --set-env-vars "JWT_SECRET=$(shell openssl rand -base64 32),LOG_LEVEL=info,LOG_FORMAT=json"
 		--set-env-vars "JWT_SECRET=$(JWT_SECRET),LOG_LEVEL=info,LOG_FORMAT=json"
 
 lint: ## Run golangci-lint
