@@ -50,6 +50,7 @@ func main() {
 	authHandler := handlers.NewAuthHandler(authService, logger, cfg.JWTSecret)
 	todoHandler := handlers.NewTodoHandler(todoService, logger)
 	userHandler := handlers.NewUserHandler(userService, logger)
+	webHandler := handlers.NewWebHandler(authService, cfg.JWTSecret)
 
 	r := chi.NewRouter()
 
@@ -80,6 +81,9 @@ func main() {
 		r.Patch("/{id}", userHandler.Update)
 		r.Delete("/{id}", userHandler.Delete)
 	})
+
+	r.Get("/login", webHandler.LoginPage)
+	r.Post("/login", webHandler.Login)
 
 	addr := ":" + cfg.Port
 	logger.Info("Server starting", "port", cfg.Port)
