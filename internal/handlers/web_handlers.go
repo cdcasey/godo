@@ -12,12 +12,14 @@ import (
 
 type WebHandler struct {
 	authService *service.AuthService
+	todoService *service.TodoService
 	jwtSecret   string
 }
 
-func NewWebHandler(authService *service.AuthService, jwtSecret string) *WebHandler {
+func NewWebHandler(authService *service.AuthService, todoService *service.TodoService, jwtSecret string) *WebHandler {
 	return &WebHandler{
 		authService: authService,
+		todoService: todoService,
 		jwtSecret:   jwtSecret,
 	}
 }
@@ -61,4 +63,20 @@ func (h *WebHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("HX-Redirect", "/todos")
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *WebHandler) TodosPage(w http.ResponseWriter, r *http.Request) {
+	claims, ok := auth.GetClaims(r.Context())
+	if !ok {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	todos, err := h.todoService.List(claims.UserID, claims.Role)
+	if err != nil {
+		http.Error(w, "Failed to load todos", http.StatusInternalServerError)
+		return
+	}
+
+	pages.Todos(todos).Render(r.Context(), w)
 }

@@ -1,0 +1,22 @@
+package pages
+
+import "godo/internal/domain"
+import "godo/web/templates/layouts"
+import "godo/web/templates/components"
+
+templ Todos(todos []*domain.Todo) {
+	@layouts.Base("My Todos") {
+		<div class="card">
+			<h1>My Todos</h1>
+			<form hx-post="/todos" hx-target="#todo-list" hx-swap="afterbegin" hx-on::after-request="this.request()">
+				<input type="text" name="title" placeholder="Add a new todo" required/>
+				<button type="submit">Add</button>
+			</form>
+			<ul id="todo-list" style="list-style: none; padding: 0; margin-top: 1rem;">
+				for _, todo := range todos {
+					@components.TodoItem(todo)
+				}
+			</ul>
+		</div>
+	}
+}

@@ -2,8 +2,8 @@ package auth
 
 import "net/http"
 
-func CookieMiddleware(secret string) func(http.HandlerFunc) http.Handler {
-	return func(next http.HandlerFunc) http.Handler {
+func CookieMiddleware(secret string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			cookie, err := r.Cookie("auth_token")
 			if err != nil {

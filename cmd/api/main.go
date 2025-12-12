@@ -50,7 +50,7 @@ func main() {
 	authHandler := handlers.NewAuthHandler(authService, logger, cfg.JWTSecret)
 	todoHandler := handlers.NewTodoHandler(todoService, logger)
 	userHandler := handlers.NewUserHandler(userService, logger)
-	webHandler := handlers.NewWebHandler(authService, cfg.JWTSecret)
+	webHandler := handlers.NewWebHandler(authService, todoService, cfg.JWTSecret)
 
 	r := chi.NewRouter()
 
@@ -84,6 +84,11 @@ func main() {
 
 	r.Get("/login", webHandler.LoginPage)
 	r.Post("/login", webHandler.Login)
+
+	r.Group(func(r chi.Router) {
+		r.Use(auth.CookieMiddleware(cfg.JWTSecret))
+		r.Get("/todos", webHandler.TodosPage)
+	})
 
 	addr := ":" + cfg.Port
 	logger.Info("Server starting", "port", cfg.Port)
