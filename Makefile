@@ -14,6 +14,9 @@ help: ## Show this help message
 	@echo "Available commands:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "make %-15s %s\n", $$1, $$2}'
 
+dev:
+	@air
+
 build: templ-generate ## Build the application binary after generating html fron Templ files
 	@echo "Building $(BINARY_NAME)..."
 	@go build -o bin/$(BINARY_NAME) ./cmd/api
