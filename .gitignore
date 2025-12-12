@@ -35,3 +35,6 @@ go.work.sum
 
 # Binaries
 bin
+
+# Go generated files (templ, mockgen, protobuf, etc.)
+*_templ.go
