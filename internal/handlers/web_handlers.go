@@ -7,7 +7,10 @@ import (
 
 	"godo/internal/auth"
 	"godo/internal/service"
+	"godo/web/templates/components"
 	"godo/web/templates/pages"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type WebHandler struct {
@@ -79,4 +82,61 @@ func (h *WebHandler) TodosPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pages.Todos(todos).Render(r.Context(), w)
+}
+
+func (h *WebHandler) CreateTodo(w http.ResponseWriter, r *http.Request) {
+	claims, ok := auth.GetClaims(r.Context())
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Invalid form data", http.StatusBadRequest)
+		return
+	}
+
+	title := r.FormValue("title")
+	if title == "" {
+		http.Error(w, "Title is required", http.StatusBadRequest)
+		return
+	}
+
+	todo, err := h.todoService.Create(claims.UserID, title, "")
+	if err != nil {
+		http.Error(w, "Failed to create todo", http.StatusInternalServerError)
+		return
+	}
+
+	components.TodoItem(todo).Render(r.Context(), w)
+}
+
+func (h *WebHandler) UpdateTodo(w http.ResponseWriter, r *http.Request) {
+	claims, ok := auth.GetClaims(r.Context())
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	todoID := chi.URLParam(r, "id")
+	if todoID == "" {
+		http.Error(w, "Todo ID required", http.StatusBadRequest)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Invalid form data", http.StatusBadRequest)
+		return
+	}
+
+	completedStr := r.FormValue("completed")
+	completed := completedStr == "true"
+
+	todo, err := h.todoService.Update(todoID, claims.UserID, claims.Role, nil, nil, &completed)
+	if err != nil {
+		http.Error(w, "Failed to update todo", http.StatusInternalServerError)
+		return
+	}
+
+	components.TodoItem(todo).Render(r.Context(), w)
 }

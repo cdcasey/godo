@@ -88,6 +88,8 @@ func main() {
 	r.Group(func(r chi.Router) {
 		r.Use(auth.CookieMiddleware(cfg.JWTSecret))
 		r.Get("/todos", webHandler.TodosPage)
+		r.Post("/todos", webHandler.CreateTodo)
+		r.Patch("/todos/{id}", webHandler.UpdateTodo)
 	})
 
 	addr := ":" + cfg.Port
