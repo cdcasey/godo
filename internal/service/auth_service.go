@@ -8,6 +8,8 @@ import (
 var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrEmailExists        = errors.New("email already exists")
+	ErrInvalidInput       = errors.New("invalid input")
+	ErrPasswordTooShort   = errors.New("password must be at least 8 characters")
 )
 
 type AuthService struct {
@@ -19,6 +21,14 @@ func NewAuthService(repo domain.UserRepository) *AuthService {
 }
 
 func (s *AuthService) Register(email, password string) (*domain.User, error) {
+	if email == "" || password == "" {
+		return nil, ErrInvalidInput
+	}
+
+	if len(password) < 8 {
+		return nil, ErrPasswordTooShort
+	}
+
 	hashedPassword, err := domain.HashPassword(password)
 	if err != nil {
 		return nil, err

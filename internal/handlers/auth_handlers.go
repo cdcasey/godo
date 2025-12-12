@@ -48,20 +48,19 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Email == "" || req.Password == "" {
-		http.Error(w, "Email and password are required", http.StatusBadRequest)
-		return
-	}
-
-	if len(req.Password) < 8 {
-		http.Error(w, "Password must be at least 8 characters", http.StatusBadRequest)
-		return
-	}
-
 	user, err := h.authService.Register(req.Email, req.Password)
 	if err != nil {
-		h.logger.Error("Failed to register user", "error", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		switch err {
+		case service.ErrInvalidInput, service.ErrPasswordTooShort:
+			h.logger.Warn("Invalid registration input", "error", err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		case service.ErrEmailExists:
+			h.logger.Warn("Email already exists", "email", req.Email)
+			http.Error(w, "Email already exists", http.StatusConflict)
+		default:
+			h.logger.Error("Failed to register user", "error", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
 		return
 	}
 
