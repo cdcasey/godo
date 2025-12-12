@@ -3,17 +3,31 @@ package components
 import "godo/internal/domain"
 import "fmt"
 
+css todoItemStyles() {
+	padding: 0.5rem 0;
+	border-bottom: 1px solid #eee;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+css completedItemStyles() {
+	text-decoration: line-through;
+	color: #888;
+}
+
 templ TodoItem(todo *domain.Todo) {
-	<li id={ fmt.Sprintf("todo-%s", todo.ID) } style="padding: 0.5rem 0; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 0.5rem;">
+	<li id={ fmt.Sprintf("todo-%s", todo.ID) } class={ todoItemStyles() }>
 		<input
 			type="checkbox"
 			checked?={ todo.Completed }
 			hx-patch={ fmt.Sprintf("/todos/%s", todo.ID) }
 			hx-target={ fmt.Sprintf("#todo-%s", todo.ID) }
+			hx-trigger="change"
 			hx-swap="outerHTML"
-			hx-vals={ fmt.Sprintf(`{"completed": %t`, !todo.Completed) }
+			hx-vals={ fmt.Sprintf(`{"completed": %t}`, !todo.Completed) }
 		/>
-		<span style={ templ.KV("text-decoration: line-through; color: #888;", todo.Completed) }>
+		<span class={ templ.KV(completedItemStyles(), todo.Completed) }>
 			{ todo.Title }
 		</span>
 	</li>
