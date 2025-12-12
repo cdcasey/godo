@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -42,7 +41,6 @@ func (h *WebHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.authService.Authenticate(email, password)
 	if err != nil {
-		fmt.Println(fmt.Errorf("the error: %w", err))
 		w.Header().Set("Content-Type", "text/html")
 		w.Write([]byte("Invalid email or password"))
 		return

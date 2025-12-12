@@ -19,7 +19,10 @@ func setupWebTestHandler(t *testing.T) *WebHandler {
 	userRepo := store.NewUserRepo(db)
 	authService := service.NewAuthService(userRepo)
 
-	return NewWebHandler(authService, "test-jwt-secret")
+	todoRepo := store.NewTodoRepo(db)
+	todoService := service.NewTodoService(todoRepo)
+
+	return NewWebHandler(authService, todoService, "test-jwt-secret")
 }
 
 func TestWebLoginPage_Renders(t *testing.T) {
@@ -47,7 +50,9 @@ func TestWebLogin_Success(t *testing.T) {
 	db := testutil.SetupTestDB(t)
 	userRepo := store.NewUserRepo(db)
 	authService := service.NewAuthService(userRepo)
-	handler := NewWebHandler(authService, "test-jwt-secret")
+	todoRepo := store.NewTodoRepo(db)
+	todoService := service.NewTodoService(todoRepo)
+	handler := NewWebHandler(authService, todoService, "test-jwt-secret")
 
 	// Create a user
 	password := "password123"
