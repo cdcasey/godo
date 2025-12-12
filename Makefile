@@ -14,7 +14,7 @@ help: ## Show this help message
 	@echo "Available commands:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "make %-15s %s\n", $$1, $$2}'
 
-build: ## Build the application binary
+build: templ-generate ## Build the application binary after generating html fron Templ files
 	@echo "Building $(BINARY_NAME)..."
 	@go build -o bin/$(BINARY_NAME) ./cmd/api
 
@@ -31,6 +31,14 @@ test-coverage: ## Run tests with detailed coverage report
 	@go test -v -coverprofile=coverage.out ./...
 	@go tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report: coverage.html"
+
+templ-generate: ## Generate Templ files
+	@echo "Generating Templ files..."
+	@templ generate
+
+templ-watch: ## Watch and regenerate Templ files on change
+	@echo "Watching Templ files..."
+	@templ generate --watch
 
 migrate-up: ## Run database migrations up
 	@echo "Running migrations up..."
