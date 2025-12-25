@@ -79,29 +79,31 @@ func TestRegister_Failure(t *testing.T) {
 			expectedError:  "Invalid request body",
 		},
 		{
-			name: "missing email",
+			name: "missing_email",
 			body: RegisterRequest{
+				Email:    "",
 				Password: "password123",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedError:  "Email and password are required",
+			expectedError:  "invalid input",
 		},
 		{
-			name: "missing password",
+			name: "missing_password",
 			body: RegisterRequest{
-				Email: "test@example.com",
+				Email:    "test@example.com",
+				Password: "",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedError:  "Email and password are required",
+			expectedError:  "invalid input",
 		},
 		{
-			name: "password too short",
+			name: "password_too_short",
 			body: RegisterRequest{
 				Email:    "test@example.com",
 				Password: "short",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedError:  "Password must be at least 8 characters",
+			expectedError:  "password must be at least 8 characters",
 		},
 	}
 
