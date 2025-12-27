@@ -45,7 +45,6 @@ func (h *TodoConnectHandler) CreateTodo(
 	return connect.NewResponse(&todov1.CreateTodoResponse{
 		Todo: todoToProto(todo),
 	}), nil
-	// return nil, connect.NewError(connect.CodeUnimplemented, nil)
 }
 
 func (h *TodoConnectHandler) ListTodos(
@@ -80,7 +79,7 @@ func (h *TodoConnectHandler) GetTodo(
 		return nil, connect.NewError(connect.CodeUnauthenticated, nil)
 	}
 
-	// Thanks to protobuf typing this probably isn't needed
+	// Thanks to protobuf typing this probably isn't needed, but I'm keeping it as an example
 	todoID := req.Msg.Id
 	if todoID == "" {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("Todo ID required"))
