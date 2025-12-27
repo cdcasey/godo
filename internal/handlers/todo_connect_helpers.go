@@ -3,6 +3,8 @@ package handlers
 import (
 	todov1 "godo/gen/todo/v1"
 	"godo/internal/domain"
+
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // This may seem weird, but here's the deal:
@@ -21,5 +23,7 @@ func todoToProto(t *domain.Todo) *todov1.Todo {
 		Title:       t.Title,
 		Description: t.Description,
 		Completed:   t.Completed,
+		CreatedAt:   timestamppb.New(t.CreatedAt),
+		UpdatedAt:   timestamppb.New(t.UpdatedAt),
 	}
 }
