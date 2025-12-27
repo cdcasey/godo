@@ -1,6 +1,7 @@
 package main
 
 import (
+	"godo/gen/todo/v1/todov1connect"
 	"godo/internal/auth"
 	"godo/internal/config"
 	"godo/internal/handlers"
@@ -52,6 +53,10 @@ func main() {
 	userHandler := handlers.NewUserHandler(userService, logger)
 	webHandler := handlers.NewWebHandler(authService, todoService, cfg.JWTSecret)
 
+	// Connect handler
+	todoConnectHandler := handlers.NewTodoConnectHandler(todoService)
+	connectPath, connectHandler := todov1connect.NewTodoServiceHandler(todoConnectHandler)
+
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -59,6 +64,9 @@ func main() {
 	r.Use(loggerMiddleware(logger))
 	r.Use(middleware.Recoverer)
 	r.Use(corsMiddleware(cfg.AllowedOrigins))
+
+	// Connect RPC Routes
+	r.Mount(connectPath, auth.Middleware(cfg.JWTSecret)(connectHandler))
 
 	r.Get("/api/health", healthHandler())
 
